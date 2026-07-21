@@ -1,0 +1,38 @@
+# Downloaded/rebuildable local map assets and generated exports
+.local/
+data/
+backups/
+exports/
+*.mbtiles
+*.pmtiles
+*.osm.pbf
+
+# Dependencies and build output
+node_modules/
+**/node_modules/
+.pnpm-store/
+dist/
+**/dist/
+coverage/
+.turbo/
+
+# Generated test/browser artifacts
+.playwright-cli/
+output/playwright/
+tmp/
+*.log
+
+# Local secrets and machine configuration
+.env
+.env.local
+infra/config/local.env
+
+# Apple/Xcode local state
+DerivedData/
+.build/
+SourcePackages/
+xcuserdata/
+*.xcuserstate
+
+# macOS
+.DS_Store
