@@ -1,0 +1,11 @@
+{
+  "options": {
+    "paths": {
+      "root": "/data",
+      "mbtiles": "mbtiles"
+    }
+  },
+  "data": {
+    "candidate": { "mbtiles": "candidate.mbtiles" }
+  }
+}

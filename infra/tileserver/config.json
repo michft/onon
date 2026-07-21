@@ -1,0 +1,25 @@
+{
+  "options": {
+    "paths": {
+      "root": "/data",
+      "fonts": "fonts",
+      "sprites": "sprites",
+      "styles": "config/styles",
+      "mbtiles": "mbtiles"
+    },
+    "serveAllStyles": false,
+    "maxSize": 4096,
+    "formatOptions": {
+      "jpeg": { "quality": 90 },
+      "webp": { "quality": 90 }
+    }
+  },
+  "styles": {
+    "screen": { "style": "screen.json" },
+    "blue-light-print": { "style": "blue-light-print.json" },
+    "greyscale-print": { "style": "greyscale-print.json" }
+  },
+  "data": {
+    "sydney": { "mbtiles": "active.mbtiles" }
+  }
+}

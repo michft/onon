@@ -1,0 +1,53 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #1d211f;
+  background: #d8ddd7;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button, input, select { font: inherit; }
+button, select, input { min-height: 2.5rem; border: 1px solid #69716b; border-radius: 0.35rem; }
+button { padding: 0.45rem 0.7rem; background: #f8f7f1; cursor: pointer; }
+button:hover:not(:disabled), button.active, button.selected { background: #263c31; color: white; }
+button:disabled { cursor: not-allowed; opacity: 0.5; }
+button.danger { color: #842916; }
+label { display: grid; gap: 0.25rem; font-size: 0.85rem; font-weight: 650; }
+select, input { padding: 0.4rem 0.55rem; background: white; }
+h1, h2, p { margin-top: 0; }
+h1 { margin-bottom: 0.1rem; font-size: 1.4rem; }
+h2 { margin-bottom: 0.65rem; font-size: 1rem; }
+
+.app-shell { min-height: 100dvh; display: flex; flex-direction: column; }
+.topbar { display: flex; gap: 1rem; align-items: center; justify-content: space-between; padding: 0.65rem 1rem; background: #f4f1e8; border-bottom: 1px solid #69716b; }
+.topbar p { margin: 0; color: #56605a; font-size: 0.75rem; }
+.panel { background: rgba(250, 249, 243, 0.96); padding: 0.8rem; border: 1px solid #7c847e; border-radius: 0.45rem; box-shadow: 0 2px 8px rgba(20, 30, 24, 0.1); }
+.unlock { width: min(30rem, calc(100% - 2rem)); margin: 3rem auto; }
+.unlock form { display: grid; gap: 0.75rem; }
+.loading { padding: 2rem; }
+.workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr; }
+.sidebar { display: grid; gap: 0.65rem; padding: 0.65rem; align-content: start; max-height: 38dvh; overflow: auto; }
+.map-region { min-height: 58dvh; position: relative; order: -1; }
+.map { position: absolute; inset: 0; }
+.map-tools { position: absolute; left: 0.65rem; right: 0.65rem; bottom: 1.7rem; z-index: 2; }
+.map-tools h2 { margin-bottom: 0.4rem; }
+.button-row { display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.2rem; }
+.button-row button { flex: 0 0 auto; }
+.status { min-height: 1.1rem; margin: 0.5rem 0 0; color: #435148; font-size: 0.8rem; }
+.recordings { list-style: none; padding: 0; margin: 0.6rem 0 0; display: grid; gap: 0.4rem; }
+.recordings button { width: 100%; display: grid; gap: 0.15rem; text-align: left; }
+.recordings span, .recordings small { font-size: 0.72rem; }
+.pairing { margin-top: 0.6rem; display: grid; justify-items: center; gap: 0.25rem; }
+.pairing img { width: 150px; height: 150px; }
+.pairing strong { letter-spacing: 0.25em; font-size: 1.2rem; }
+.symbol-row { display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; padding: 0.4rem 0; border-top: 1px solid #d1d4cf; font-size: 0.78rem; }
+.symbol-row > :first-child { margin-right: auto; }
+.right-sidebar .panel { display: grid; gap: 0.55rem; }
+
+@media (min-width: 900px) {
+  .workspace { grid-template-columns: 17rem minmax(25rem, 1fr) 18rem; }
+  .sidebar { max-height: calc(100dvh - 4.2rem); overflow: auto; }
+  .map-region { min-height: calc(100dvh - 4.2rem); order: initial; }
+  .map-tools { right: auto; max-width: calc(100% - 1.3rem); }
+}

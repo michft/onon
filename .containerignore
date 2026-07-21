@@ -1,0 +1,9 @@
+.git
+.jj
+.local
+apps/ios
+**/node_modules
+**/dist
+coverage
+backups
+exports

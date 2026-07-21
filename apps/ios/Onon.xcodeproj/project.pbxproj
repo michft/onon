@@ -1,0 +1,201 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* MapLibre in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000002 /* MapLibre */; };
+		A10000000000000000000003 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* libsqlite3.tbd */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A10000000000000000000005 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000010 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000011;
+			remoteInfo = Onon;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A10000000000000000000004 /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.text-based-dylib-definition; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
+		A10000000000000000000006 /* Onon.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Onon.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000007 /* OnonTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OnonTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A10000000000000000000008 /* Exceptions for Onon folder */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A10000000000000000000011 /* Onon */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A10000000000000000000009 /* Onon */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (A10000000000000000000008 /* Exceptions for Onon folder */);
+			path = Onon;
+			sourceTree = "<group>";
+		};
+		A1000000000000000000000A /* OnonTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = OnonTests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A1000000000000000000000B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000001 /* MapLibre in Frameworks */,
+				A10000000000000000000003 /* libsqlite3.tbd in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1000000000000000000000C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A1000000000000000000000D = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000009 /* Onon */,
+				A1000000000000000000000A /* OnonTests */,
+				A1000000000000000000000E /* Frameworks */,
+				A1000000000000000000000F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A1000000000000000000000E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (A10000000000000000000004 /* libsqlite3.tbd */);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A1000000000000000000000F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000006 /* Onon.app */,
+				A10000000000000000000007 /* OnonTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A10000000000000000000011 /* Onon */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000012 /* Build configuration list for PBXNativeTarget "Onon" */;
+			buildPhases = (
+				A10000000000000000000013 /* Sources */,
+				A1000000000000000000000B /* Frameworks */,
+				A10000000000000000000014 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = ();
+			fileSystemSynchronizedGroups = (A10000000000000000000009 /* Onon */);
+			name = Onon;
+			packageProductDependencies = (A10000000000000000000002 /* MapLibre */);
+			productName = Onon;
+			productReference = A10000000000000000000006 /* Onon.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A10000000000000000000015 /* OnonTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000016 /* Build configuration list for PBXNativeTarget "OnonTests" */;
+			buildPhases = (
+				A10000000000000000000017 /* Sources */,
+				A1000000000000000000000C /* Frameworks */,
+				A10000000000000000000018 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = (A10000000000000000000019 /* PBXTargetDependency */);
+			fileSystemSynchronizedGroups = (A1000000000000000000000A /* OnonTests */);
+			name = OnonTests;
+			productName = OnonTests;
+			productReference = A10000000000000000000007 /* OnonTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A10000000000000000000010 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					A10000000000000000000011 = {CreatedOnToolsVersion = 26.0;};
+					A10000000000000000000015 = {CreatedOnToolsVersion = 26.0; TestTargetID = A10000000000000000000011;};
+				};
+			};
+			buildConfigurationList = A1000000000000000000001A /* Build configuration list for PBXProject "Onon" */;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base);
+			mainGroup = A1000000000000000000000D;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (A1000000000000000000001B /* XCRemoteSwiftPackageReference */);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A1000000000000000000000F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (A10000000000000000000011 /* Onon */, A10000000000000000000015 /* OnonTests */);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A10000000000000000000014 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A10000000000000000000018 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A10000000000000000000013 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A10000000000000000000017 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A10000000000000000000019 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = A10000000000000000000011 /* Onon */; targetProxy = A10000000000000000000005 /* PBXContainerItemProxy */; };
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		A10000000000000000000020 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = dwarf; ENABLE_TESTABILITY = YES; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_NO_COMMON_BLOCKS = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE; ONLY_ACTIVE_ARCH = YES; SDKROOT = iphoneos; SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)"; SWIFT_OPTIMIZATION_LEVEL = "-Onone";}; name = Debug; };
+		A10000000000000000000021 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; ENABLE_NS_ASSERTIONS = NO; GCC_C_LANGUAGE_STANDARD = gnu17; GCC_NO_COMMON_BLOCKS = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MTL_ENABLE_DEBUG_INFO = NO; SDKROOT = iphoneos; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; VALIDATE_PRODUCT = YES;}; name = Release; };
+		A10000000000000000000022 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_ENTITLEMENTS = Onon/Onon.entitlements; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = Onon/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = au.local.onon; PRODUCT_NAME = "$(TARGET_NAME)"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SUPPORTS_MACCATALYST = NO; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1;}; name = Debug; };
+		A10000000000000000000023 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_ENTITLEMENTS = Onon/Onon.entitlements; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = Onon/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = au.local.onon; PRODUCT_NAME = "$(TARGET_NAME)"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SUPPORTS_MACCATALYST = NO; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1;}; name = Release; };
+		A10000000000000000000024 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = au.local.onon.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Onon.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Onon";}; name = Debug; };
+		A10000000000000000000025 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = au.local.onon.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Onon.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Onon";}; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A1000000000000000000001A /* Build configuration list for PBXProject "Onon" */ = {isa = XCConfigurationList; buildConfigurations = (A10000000000000000000020 /* Debug */, A10000000000000000000021 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A10000000000000000000012 /* Build configuration list for PBXNativeTarget "Onon" */ = {isa = XCConfigurationList; buildConfigurations = (A10000000000000000000022 /* Debug */, A10000000000000000000023 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A10000000000000000000016 /* Build configuration list for PBXNativeTarget "OnonTests" */ = {isa = XCConfigurationList; buildConfigurations = (A10000000000000000000024 /* Debug */, A10000000000000000000025 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A1000000000000000000001B /* XCRemoteSwiftPackageReference */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/maplibre/maplibre-gl-native-distribution.git"; requirement = {kind = upToNextMajorVersion; minimumVersion = 6.26.0;}; };
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A10000000000000000000002 /* MapLibre */ = {isa = XCSwiftPackageProductDependency; package = A1000000000000000000001B /* XCRemoteSwiftPackageReference */; productName = MapLibre; };
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = A10000000000000000000010 /* Project object */;
+}

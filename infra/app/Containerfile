@@ -1,0 +1,33 @@
+FROM docker.io/library/node:24-bookworm-slim AS build
+
+ENV PNPM_HOME=/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+RUN corepack enable && corepack prepare pnpm@11.5.2 --activate
+
+WORKDIR /app
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+RUN pnpm install --frozen-lockfile
+
+COPY apps/api apps/api
+COPY apps/web apps/web
+RUN pnpm --filter @onon/web build \
+ && pnpm --filter @onon/api build \
+ && mkdir -p apps/api/public \
+ && cp -R apps/web/dist/. apps/api/public/
+
+FROM docker.io/library/node:24-bookworm-slim AS runtime
+
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=build /app/apps/api/dist ./apps/api/dist
+COPY --from=build /app/apps/api/migrations ./apps/api/migrations
+COPY --from=build /app/apps/api/public ./apps/api/public
+COPY --from=build /app/apps/api/package.json ./apps/api/package.json
+
+EXPOSE 3000
+WORKDIR /app/apps/api
+CMD ["sh", "-c", "node dist/migrate.js && exec node dist/server.js"]

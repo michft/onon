@@ -1,0 +1,85 @@
+import Foundation
+import Network
+
+actor SyncService {
+    struct UploadResponse: Decodable {
+        let recordingId: String
+        let status: String
+    }
+
+    private let database: RecordingDatabase
+    private let session: URLSession
+    private var syncing = false
+
+    init(database: RecordingDatabase, session: URLSession = .shared) {
+        self.database = database
+        self.session = session
+    }
+
+    func syncPending() async {
+        guard !syncing else { return }
+        syncing = true
+        defer { syncing = false }
+
+        guard
+            let endpoint = ServerConfiguration.endpoint("api/v1/recordings"),
+            let token = try? DeviceTokenStore.load()
+        else { return }
+
+        let ids = (try? await database.pendingRecordingIDs()) ?? []
+        for id in ids {
+            do {
+                guard let snapshot = try await database.recording(id: id) else { continue }
+                let upload = try RecordingUpload(snapshot: snapshot)
+                try await database.setSyncState(recordingID: id, state: .uploading)
+                var request = URLRequest(url: endpoint)
+                request.httpMethod = "POST"
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                request.setValue(id.uuidString, forHTTPHeaderField: "Idempotency-Key")
+                request.httpBody = try APIJSON.encoder.encode(upload)
+                let (data, response) = try await session.data(for: request)
+                guard let http = response as? HTTPURLResponse, [200, 201].contains(http.statusCode) else {
+                    throw SyncError.rejected((response as? HTTPURLResponse)?.statusCode ?? 0)
+                }
+                let receipt = try JSONDecoder().decode(UploadResponse.self, from: data)
+                guard receipt.recordingId == id.uuidString, ["created", "existing"].contains(receipt.status) else {
+                    throw SyncError.invalidReceipt
+                }
+                try await database.setSyncState(recordingID: id, state: .confirmed, serverRecordingID: receipt.recordingId)
+            } catch {
+                try? await database.setSyncState(recordingID: id, state: .failed)
+            }
+        }
+    }
+}
+
+enum SyncError: LocalizedError {
+    case rejected(Int)
+    case invalidReceipt
+
+    var errorDescription: String? {
+        switch self {
+        case let .rejected(status): "Sync failed (HTTP \(status))."
+        case .invalidReceipt: "Server returned an invalid sync receipt."
+        }
+    }
+}
+
+@MainActor
+final class ReachabilitySyncTrigger {
+    private let monitor = NWPathMonitor()
+    private let queue = DispatchQueue(label: "Onon.Reachability")
+    private let onReachable: @Sendable () -> Void
+
+    init(onReachable: @escaping @Sendable () -> Void) {
+        self.onReachable = onReachable
+        monitor.pathUpdateHandler = { [onReachable] path in
+            guard path.status == .satisfied else { return }
+            onReachable()
+        }
+        monitor.start(queue: queue)
+    }
+
+    deinit { monitor.cancel() }
+}

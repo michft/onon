@@ -1,0 +1,22 @@
+{
+  "version": 8,
+  "name": "Onon Greyscale Print",
+  "metadata": { "onon:profile": "greyscale-print", "openmaptiles:version": "3.x" },
+  "center": [151.17, -33.87],
+  "zoom": 11,
+  "sources": { "openmaptiles": { "type": "vector", "url": "mbtiles://{sydney}", "attribution": "© OpenMapTiles © OpenStreetMap contributors" } },
+  "glyphs": "{fontstack}/{range}.pbf",
+  "layers": [
+    { "id": "background", "type": "background", "paint": { "background-color": "#ffffff" } },
+    { "id": "landcover", "type": "fill", "source": "openmaptiles", "source-layer": "landcover", "paint": { "fill-color": "#eeeeee", "fill-opacity": 0.75 } },
+    { "id": "park", "type": "fill", "source": "openmaptiles", "source-layer": "park", "paint": { "fill-color": "#d2d2d2", "fill-outline-color": "#707070" } },
+    { "id": "water", "type": "fill", "source": "openmaptiles", "source-layer": "water", "paint": { "fill-color": "#b0b0b0", "fill-outline-color": "#353535" } },
+    { "id": "waterway", "type": "line", "source": "openmaptiles", "source-layer": "waterway", "paint": { "line-color": "#353535", "line-width": 1.8, "line-dasharray": [1, 1.5] } },
+    { "id": "buildings", "type": "fill", "source": "openmaptiles", "source-layer": "building", "minzoom": 13, "paint": { "fill-color": "#f7f7f7", "fill-outline-color": "#777777" } },
+    { "id": "roads-casing", "type": "line", "source": "openmaptiles", "source-layer": "transportation", "filter": ["==", "$type", "LineString"], "paint": { "line-color": "#1d1d1d", "line-width": ["interpolate", ["linear"], ["zoom"], 8, 1.5, 16, 8] } },
+    { "id": "roads", "type": "line", "source": "openmaptiles", "source-layer": "transportation", "filter": ["==", "$type", "LineString"], "paint": { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.7, 16, 5.2] } },
+    { "id": "boundaries", "type": "line", "source": "openmaptiles", "source-layer": "boundary", "paint": { "line-color": "#505050", "line-width": 1.5, "line-dasharray": [6, 2] } },
+    { "id": "road-labels", "type": "symbol", "source": "openmaptiles", "source-layer": "transportation_name", "minzoom": 12, "filter": ["==", "$type", "LineString"], "layout": { "symbol-placement": "line", "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]], "text-font": ["Open Sans Regular"], "text-size": ["interpolate", ["linear"], ["zoom"], 12, 10, 16, 13] }, "paint": { "text-color": "#111111", "text-halo-color": "#ffffff", "text-halo-width": 1.5 } },
+    { "id": "place-labels", "type": "symbol", "source": "openmaptiles", "source-layer": "place", "layout": { "text-field": ["coalesce", ["get", "name:latin"], ["get", "name"]], "text-font": ["Open Sans Semibold"], "text-size": 12 }, "paint": { "text-color": "#111111", "text-halo-color": "#ffffff", "text-halo-width": 1.5 } }
+  ]
+}

@@ -1,7 +1,31 @@
 # Onon MVP Plan
 
-**Status:** Draft — awaiting approval  
-**Implementation:** Do not begin until this plan is approved.
+**Status:** Implemented — machine validation complete; physical acceptance pending
+**Approval:** Granted by user before implementation began.
+
+## Implementation validation — 2026-07-21
+
+- Built the Sydney OpenMapTiles archive for the approved bounds: 451 vector
+  tiles, zoom 0–14, 22 MB, with a version manifest and atomic active symlink.
+- Ran PostgreSQL 17, TileServer GL 5.6, Planetiler 0.10.1, and the Web/API image
+  as ARM64 Apple containers. The active PostgreSQL volume is a 20 GB Apple
+  managed volume; restart persistence, backup, staged restore, and clean
+  bootstrap passed.
+- Exercised pairing, token exchange, idempotent recording upload, immutable raw
+  samples, Trail Overlay derivation, bad-section removal, undo/redo, waypoint
+  add/move, Direction Arrow add/move/flip, manifest delivery, and PDF export
+  against the live containers.
+- Rendered all three web profiles from local vector tiles in a real browser with
+  zero console errors or warnings. Verified A4 portrait and landscape PDFs for
+  all profiles visually, including Trail, circle-dot Waypoint, Direction Arrow,
+  legend, scale bar, north arrow, and attribution.
+- Resolved Swift packages, built, installed, and launched the SwiftUI app in the
+  iOS simulator. Six iOS tests passed, including durable SQLite migration and
+  paused-recording write protection. Background location declarations and
+  MapLibre runtime linkage were verified.
+- The final running application database is clean; machine validation fixtures
+  were removed. The target-iPhone lock/sleep walk, airplane-mode field session,
+  and physical paper/LED checks remain the hardware acceptance listed below.
 
 ## Outcome
 
@@ -57,7 +81,8 @@ All laptop services run as individually launched OCI containers through Apple's 
 - **TileServer GL:** vector tiles, styles, fonts, sprites, and server-rendered print imagery.
 - **Web/API:** TypeScript service hosting the web workspace, pairing, sync, editing APIs, and PDF export.
 - Pin all OCI images by major version and verify ARM64 manifests.
-- Store PostgreSQL data, map archives, styles, exports, and backups in explicit host-mounted directories.
+- Store PostgreSQL data in an explicit Apple managed volume; store map archives,
+  styles, exports, and backups in explicit host-mounted directories.
 - Use database migrations from the first schema version.
 - Do not add PostGIS initially. Preserve latitude/longitude and editable geometry in ordinary PostgreSQL types; add PostGIS only when spatial database queries justify it.
 

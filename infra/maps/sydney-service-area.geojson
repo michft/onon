@@ -1,0 +1,16 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Sydney tile-generation envelope",
+        "note": "Conservative rectangular generation envelope; not an administrative boundary."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[151.00, -34.04], [151.33, -34.04], [151.33, -33.70], [151.00, -33.70], [151.00, -34.04]]]
+      }
+    }
+  ]
+}
