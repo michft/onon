@@ -1,0 +1,10 @@
+html, body { margin: 0; height: 100%; }
+body { display: flex; flex-direction: column; font: 15px system-ui, sans-serif; color: #25312e; background: #fafbf8; }
+header { padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+h1 { margin: 0; font-size: 20px; }
+p { margin: 5px 0 0; color: #59665f; font-size: 13px; }
+nav { display: flex; flex-wrap: wrap; gap: 6px; }
+button { padding: 10px 12px; border: 1px solid #c8d2cb; border-radius: 6px; font: inherit; color: inherit; background: #fff; cursor: pointer; }
+button[aria-pressed="true"] { background: #e6eee5; border-color: #6c8474; }
+button:focus-visible { outline: 3px solid #267c65; outline-offset: 2px; }
+main { flex: 1; min-height: 240px; }
