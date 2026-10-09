@@ -6,6 +6,8 @@ struct MapCanvas: UIViewRepresentable {
     let styleURL: URL?
     let recording: RecordingSnapshot?
     @Binding var visibleBounds: OfflineBounds?
+    var initialZoomLevel: Double = 11
+    var recenterRequest = 0
 
     func makeCoordinator() -> Coordinator { Coordinator(parent: self) }
 
@@ -15,13 +17,18 @@ struct MapCanvas: UIViewRepresentable {
         map.showsUserLocation = true
         map.logoView.isHidden = false
         map.attributionButton.isHidden = false
-        map.setCenter(CLLocationCoordinate2D(latitude: -33.8688, longitude: 151.2093), zoomLevel: 11, animated: false)
+        map.maximumZoomLevel = 19
+        map.setCenter(CLLocationCoordinate2D(latitude: -33.8685, longitude: 151.2024), zoomLevel: initialZoomLevel, animated: false)
         return map
     }
 
     func updateUIView(_ map: MLNMapView, context: Context) {
         context.coordinator.parent = self
         if map.styleURL != styleURL, let styleURL { map.styleURL = styleURL }
+        if context.coordinator.lastRecenterRequest != recenterRequest {
+            context.coordinator.lastRecenterRequest = recenterRequest
+            map.userTrackingMode = .follow
+        }
         let prior = map.annotations ?? []
         if !prior.isEmpty { map.removeAnnotations(prior) }
         guard let recording else { return }
@@ -39,6 +46,7 @@ struct MapCanvas: UIViewRepresentable {
 
     final class Coordinator: NSObject, MLNMapViewDelegate {
         var parent: MapCanvas
+        var lastRecenterRequest = 0
 
         init(parent: MapCanvas) { self.parent = parent }
 
