@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@maplibre/maplibre-gl-style-spec": "24.10.0",
     "@vitejs/plugin-react": "^4.3.4",
     "maplibre-gl": "^5.1.0",
     "qrcode": "^1.5.4",
