@@ -3,24 +3,45 @@ import SwiftUI
 
 struct RecordingView: View {
     @EnvironmentObject private var model: AppModel
-    @State private var visibleBounds: OfflineBounds?
+    @Environment(\.colorScheme) private var colorScheme
     @State private var confirmFinish = false
+    @State private var recenterRequest = 0
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .bottom) {
-                MapCanvas(
-                    styleURL: model.offlineMaps.styleURL,
-                    recording: model.currentRecording,
-                    visibleBounds: $visibleBounds
-                )
-                .ignoresSafeArea(edges: .bottom)
-
+            Group {
+                if let styleURL = BundledMap.styleURL(dark: colorScheme == .dark) {
+                    MapCanvas(
+                        styleURL: styleURL,
+                        recording: model.currentRecording,
+                        visibleBounds: .constant(nil),
+                        initialZoomLevel: 16,
+                        recenterRequest: recenterRequest
+                    )
+                    .overlay(alignment: .topLeading) {
+                        Button { recenterRequest += 1 } label: {
+                            Image(systemName: "location.fill")
+                                .frame(width: 44, height: 44)
+                        }
+                        .background(.regularMaterial, in: Circle())
+                        .accessibilityLabel("Follow my location")
+                        .padding(12)
+                    }
+                } else {
+                    ContentUnavailableView(
+                        "Offline map unavailable",
+                        systemImage: "map",
+                        description: Text("This build could not load its Sydney map. Recording remains available.")
+                    )
+                }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
                 VStack(spacing: 12) {
                     statusCard
                     controls
                 }
                 .padding()
+                .background(.ultraThinMaterial)
             }
             .navigationTitle("Trail recorder")
             .navigationBarTitleDisplayMode(.inline)
@@ -73,7 +94,9 @@ struct RecordingView: View {
                     Label("Finish", systemImage: "stop.fill").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
+                .labelStyle(.titleOnly)
             }
+            .controlSize(.large)
         } else {
             Button { Task { await model.start() } } label: {
                 Label("Start recording", systemImage: "record.circle").frame(maxWidth: .infinity)
@@ -86,6 +109,7 @@ struct RecordingView: View {
     private func control(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) { Label(title, systemImage: icon).frame(maxWidth: .infinity) }
             .buttonStyle(.borderedProminent)
+            .labelStyle(.titleOnly)
     }
 
     private var statusText: String {
