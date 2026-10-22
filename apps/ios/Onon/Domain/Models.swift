@@ -102,6 +102,19 @@ struct RecordingSnapshot: Equatable, Sendable {
     let summary: RecordingSummary
     let samples: [RawSample]
     let waypoints: [WaypointObservation]
+
+    /// Applies a committed sample without re-reading the whole recording from storage.
+    func appending(_ sample: RawSample) -> RecordingSnapshot {
+        RecordingSnapshot(
+            summary: RecordingSummary(
+                id: summary.id, startedAt: summary.startedAt, finishedAt: summary.finishedAt,
+                state: summary.state, syncState: summary.syncState,
+                sampleCount: summary.sampleCount + 1, waypointCount: summary.waypointCount
+            ),
+            samples: samples + [sample],
+            waypoints: waypoints
+        )
+    }
 }
 
 struct PairingQRCode: Decodable, Equatable, Sendable {
@@ -199,11 +212,32 @@ enum RecordingError: LocalizedError, Equatable {
     }
 }
 
+/// How old the last accepted fix may be when placing a waypoint. While standing still iOS sends
+/// no new fixes (2 m distance filter), so the last fix is usually still where the phone is.
+enum WaypointFixAge {
+    static let key = "waypointMaximumFixAge"
+    static let options: [TimeInterval] = [15, 30, 60, 120, 300]
+    static let defaultValue: TimeInterval = 120
+
+    static var current: TimeInterval {
+        let stored = UserDefaults.standard.double(forKey: key)
+        return stored > 0 ? min(max(stored, options[0]), options[options.count - 1]) : defaultValue
+    }
+
+    static func label(_ seconds: TimeInterval) -> String {
+        seconds < 60 ? "\(Int(seconds)) seconds" : seconds == 60 ? "1 minute" : "\(Int(seconds / 60)) minutes"
+    }
+}
+
 enum APIJSON {
-    static func dateString(_ date: Date) -> String {
+    private static let dateFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.string(from: date)
+        return formatter
+    }()
+
+    static func dateString(_ date: Date) -> String {
+        dateFormatter.string(from: date)
     }
 
     static let encoder: JSONEncoder = {

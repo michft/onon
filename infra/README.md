@@ -31,6 +31,11 @@ location by adding an absolute `ONON_DATA_ROOT` to `local.env` before the first
 map build.
 The default is the git-ignored `.local/onon` directory in this repository.
 
+Remote OSM inputs and OCI image checks have a seven-day freshness window.
+Repeated bootstrap/map-refresh runs inside that window reuse local assets.
+Change `ONON_REMOTE_DOWNLOAD_MAX_AGE_DAYS` in `local.env`; use `0` only for an
+intentional immediate remote refresh. An explicit `ONON_SOURCE_PBF` always wins.
+
 The map refresh downloads Geofabrik's Australia extract, then Planetiler clips
 generated tiles to `151.00,-34.04,151.33,-33.70`. This rectangle is a
 conservative generation envelope around the agreed service area, not a legal or
@@ -45,7 +50,8 @@ the one-nautical-mile offshore edge needs adjustment.
   Containers and host data remain.
 - `status-local.sh`: reports container state, service health, active map, and
   disk use.
-- `refresh-map.sh`: downloads versioned source, makes a versioned candidate,
+- `refresh-map.sh`: reuses the newest source if it is under seven days old,
+  otherwise downloads a versioned source; it then makes a versioned candidate,
   runs SQLite and live TileServer smoke checks, atomically changes the active
   symlink, writes source/archive checksums, and recreates TileServer. Failed
   candidates never replace the active map. Previous source and tile archives
@@ -77,9 +83,12 @@ With default ports:
 Unlock Web workspace with `ADMIN_TOKEN` from `infra/config/local.env`. File is
 mode `0600`, git-ignored, and must not be shared.
 
-Add the Mac's LAN hostname and address to `ONON_TILESERVER_ALLOWED_HOSTS` before
-iPhone use. The server rewrites local `mbtiles://` and glyph paths in published
-styles. Runtime tile, style, font, and sprite requests require no internet.
+Bootstrap stores the browser host in `ONON_PUBLIC_HOST` and the Mac LAN IPv4 in
+`ONON_PAIRING_HOST`. The latter is embedded in iPhone pairing QR codes and
+native map URLs because `.local` names are not reliable on every Wi-Fi setup.
+Override `ONON_PAIRING_HOST` in `local.env` if the Mac has multiple networks.
+The server rewrites local `mbtiles://` and glyph paths in published styles.
+Runtime tile, style, font, and sprite requests require no internet.
 
 ## Data layout
 

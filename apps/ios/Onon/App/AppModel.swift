@@ -8,7 +8,13 @@ final class AppModel: ObservableObject {
     @Published private(set) var isReady = false
     @Published private(set) var isSyncing = false
     @Published private(set) var isPaired = false
-    @Published var alertMessage: String?
+    @Published private(set) var serverReachable = false
+    @Published private(set) var captureFailure: String?
+    @Published private(set) var pendingPairing: PairingQRCode?
+    @Published private(set) var isPairing = false
+    @Published var alertMessage: String? {
+        didSet { if let alertMessage { Log.recording.error("Alert shown: \(alertMessage, privacy: .public)") } }
+    }
 
     let locationRecorder = LocationRecorder()
     let offlineMaps = OfflineMapManager()
@@ -17,23 +23,33 @@ final class AppModel: ObservableObject {
     private var syncService: SyncService?
     private var reachability: ReachabilitySyncTrigger?
     private var periodicSync: Task<Void, Never>?
+    private let readRecording: @MainActor (RecordingDatabase, UUID) async throws -> RecordingSnapshot?
+    private let pairingExchange: @MainActor (PairingQRCode) async throws -> Void
+
+    init(database: RecordingDatabase? = nil,
+         readRecording: @escaping @MainActor (RecordingDatabase, UUID) async throws -> RecordingSnapshot? = { try await $0.recording(id: $1) },
+         pairingExchange: @escaping @MainActor (PairingQRCode) async throws -> Void = { try await PairingService().pair(qrCode: $0) }) {
+        self.database = database
+        self.readRecording = readRecording
+        self.pairingExchange = pairingExchange
+    }
 
     deinit { periodicSync?.cancel() }
 
     func prepare() async {
         guard !isReady else { return }
         do {
-            let database = try RecordingDatabase()
+            let database = try self.database ?? RecordingDatabase()
             self.database = database
             syncService = SyncService(database: database)
-            isPaired = (try DeviceTokenStore.load()) != nil && ServerConfiguration.serverURL != nil
-            if let cachedManifest = MapManifestStore.load() { configureMap(cachedManifest) }
+            isPaired = (try DeviceTokenStore.load()) != nil && ServerConfiguration.approvedServerURL != nil
             locationRecorder.onAcceptedLocation = { [weak self] location in
                 Task { @MainActor [weak self] in await self?.commit(location) }
             }
             reachability = ReachabilitySyncTrigger { [weak self] in
                 Task { @MainActor [weak self] in await self?.syncNow() }
             }
+            periodicSync?.cancel()
             periodicSync = Task { [weak self] in
                 while !Task.isCancelled {
                     try? await Task.sleep(for: .seconds(30))
@@ -42,15 +58,15 @@ final class AppModel: ObservableObject {
                 }
             }
             try await reload()
+            if let summary = currentRecording?.summary {
+                Log.recording.notice("Recovered \(summary.state.rawValue, privacy: .public) recording \(summary.id, privacy: .public) with \(summary.sampleCount) samples")
+            }
             if currentRecording?.summary.state == .active {
                 locationRecorder.startCapture()
             }
-            if isPaired {
-                await loadMapManifest()
-                await syncNow()
-            }
             isReady = true
         } catch {
+            Log.storage.fault("Startup failed: \(error.localizedDescription, privacy: .public)")
             alertMessage = error.localizedDescription
         }
     }
@@ -61,6 +77,9 @@ final class AppModel: ObservableObject {
             locationRecorder.requestPermission()
             if [.denied, .restricted].contains(locationRecorder.authorizationStatus) {
                 alertMessage = "Location access is blocked. Enable Always access in Settings before starting."
+            } else if locationRecorder.authorizationStatus == .authorizedWhenInUse {
+                // iOS shows the Always prompt only once; after that only Settings can grant it.
+                alertMessage = "Onon needs Always location access to keep recording while the phone is locked. If no prompt appears, open Settings › Onon › Location and choose Always."
             } else {
                 alertMessage = "Allow Always location access, then tap Start recording again. No recording has been created yet."
             }
@@ -68,7 +87,9 @@ final class AppModel: ObservableObject {
         }
         do {
             let id = try await database.startRecording()
+            Log.recording.notice("Started recording \(id, privacy: .public)")
             currentRecording = try await database.recording(id: id)
+            captureFailure = nil
             locationRecorder.startCapture()
             try await reload()
         } catch { alertMessage = error.localizedDescription }
@@ -78,6 +99,7 @@ final class AppModel: ObservableObject {
         guard let database, let currentRecording else { return }
         do {
             try await database.setState(recordingID: currentRecording.summary.id, from: .active, to: .paused)
+            Log.recording.notice("Paused recording \(currentRecording.summary.id, privacy: .public)")
             locationRecorder.stopCapture()
             try await reload()
         } catch { alertMessage = error.localizedDescription }
@@ -86,10 +108,30 @@ final class AppModel: ObservableObject {
     func resume() async {
         guard let database, let currentRecording else { return }
         do {
-            try await database.setState(recordingID: currentRecording.summary.id, from: .paused, to: .active)
-            locationRecorder.startCapture()
+            guard let persisted = try await readRecording(database, currentRecording.summary.id) else {
+                throw RecordingError.noActiveSession
+            }
+            switch persisted.summary.state {
+            case .paused:
+                try await database.setState(recordingID: persisted.summary.id, from: .paused, to: .active)
+            case .active:
+                break // A previous Resume may have committed before its reload failed.
+            case .finished:
+                throw RecordingError.invalidTransition
+            }
             try await reload()
-        } catch { alertMessage = error.localizedDescription }
+            guard self.currentRecording?.summary.id == persisted.summary.id,
+                  self.currentRecording?.summary.state == .active else {
+                throw RecordingError.invalidTransition
+            }
+            captureFailure = nil
+            Log.recording.notice("Resumed recording \(persisted.summary.id, privacy: .public)")
+            locationRecorder.startCapture()
+        } catch {
+            captureFailure = error.localizedDescription
+            locationRecorder.stopCapture()
+            alertMessage = "Capture remains stopped: \(error.localizedDescription) Tap Resume to try again."
+        }
     }
 
     func finish() async {
@@ -101,40 +143,59 @@ final class AppModel: ObservableObject {
                 from: currentRecording.summary.state,
                 to: .finished
             )
+            Log.recording.notice("Finished recording \(currentRecording.summary.id, privacy: .public) with \(currentRecording.summary.sampleCount) samples, \(currentRecording.summary.waypointCount) waypoints")
             try await reload()
+            captureFailure = nil
             await syncNow()
         } catch {
-            if currentRecording.summary.state == .active { locationRecorder.startCapture() }
+            if currentRecording.summary.state == .active && captureFailure == nil { locationRecorder.startCapture() }
             alertMessage = error.localizedDescription
         }
     }
 
     func addWaypoint() async {
+        let maximumAge = WaypointFixAge.current
         guard
             let database,
+            captureFailure == nil,
             let currentRecording,
             currentRecording.summary.state == .active,
             let location = locationRecorder.lastLocation,
-            abs(location.timestamp.timeIntervalSinceNow) < 30
+            abs(location.timestamp.timeIntervalSinceNow) <= maximumAge
         else {
-            alertMessage = RecordingError.noUsableLocation.localizedDescription
+            Log.recording.notice("Waypoint refused: no fix newer than \(Int(maximumAge))s while active")
+            alertMessage = "No accurate location from the last \(WaypointFixAge.label(maximumAge)). Move a few metres or wait for a fix, or allow older fixes in the waypoint menu."
             return
         }
         do {
             try await database.appendWaypoint(recordingID: currentRecording.summary.id, waypoint: WaypointObservation(location: location))
+            Log.recording.notice("Added waypoint to \(currentRecording.summary.id, privacy: .public) at ±\(location.horizontalAccuracy, format: .fixed(precision: 0))m")
             try await reload()
         } catch { alertMessage = error.localizedDescription }
     }
 
-    func completePairing(payload: String) async {
+    func receivePairing(payload: String) {
+        guard pendingPairing == nil, !isPairing else { return }
+        do { pendingPairing = try PairingService().decode(payload: payload) }
+        catch { alertMessage = error.localizedDescription }
+    }
+
+    func cancelPairing() { pendingPairing = nil }
+
+    func confirmPairing() async {
+        guard let qr = pendingPairing, !isPairing, !isSyncing else { return }
+        pendingPairing = nil
+        isPairing = true
         do {
-            let service = PairingService()
-            let qr = try service.decode(payload: payload)
-            try await service.pair(qrCode: qr)
+            try await pairingExchange(qr)
             isPaired = true
-            await loadMapManifest()
+            await loadMapManifest(showError: true)
+            isPairing = false
             await syncNow()
-        } catch { alertMessage = error.localizedDescription }
+        } catch {
+            isPairing = false
+            alertMessage = error.localizedDescription
+        }
     }
 
     func unpair() {
@@ -142,25 +203,28 @@ final class AppModel: ObservableObject {
             try DeviceTokenStore.remove()
             ServerConfiguration.serverURL = nil
             isPaired = false
+            serverReachable = false
         } catch { alertMessage = error.localizedDescription }
     }
 
     func syncNow() async {
-        guard let syncService, isPaired, !isSyncing else { return }
+        guard let syncService, isPaired, !isSyncing, !isPairing, pendingPairing == nil else { return }
         isSyncing = true
         await syncService.syncPending()
-        try? await reload()
+        do { try await reload() } catch { Log.storage.error("Reload after sync failed: \(error.localizedDescription, privacy: .public)") }
         isSyncing = false
     }
 
-    func loadMapManifest() async {
-        guard let serverURL = ServerConfiguration.serverURL else { return }
+    func loadMapManifest(showError: Bool = false) async {
+        guard let serverURL = ServerConfiguration.approvedServerURL else { return }
         do {
             let manifest = try await MapManifestService().fetch()
             MapManifestStore.save(manifest)
             configureMap(manifest, serverURL: serverURL)
+            serverReachable = true
         } catch {
-            alertMessage = "Paired, but map manifest failed: \(error.localizedDescription)"
+            serverReachable = false
+            if showError { alertMessage = "Onon server unreachable. Recording remains available offline." }
         }
     }
 
@@ -178,18 +242,38 @@ final class AppModel: ObservableObject {
         )
     }
 
-    private func commit(_ location: CLLocation) async {
-        guard let database, let snapshot = currentRecording, snapshot.summary.state == .active else { return }
+    func commit(_ location: CLLocation) async {
+        guard captureFailure == nil, let database, let snapshot = currentRecording, snapshot.summary.state == .active else { return }
+        let recordingID = snapshot.summary.id
         do {
-            let sample = RawSample(sequence: snapshot.summary.sampleCount, location: location)
-            try await database.appendSample(recordingID: snapshot.summary.id, locationSample: sample)
-            currentRecording = try await database.recording(id: snapshot.summary.id)
-        } catch {
-            if let stored = try? await database.recording(id: snapshot.summary.id), stored.summary.state == .finished {
-                return
+            let sample = try await database.appendSample(
+                recordingID: recordingID,
+                locationSample: RawSample(sequence: snapshot.summary.sampleCount, location: location)
+            )
+            // State may have moved on while awaiting storage; append only when this is the next sample.
+            if let current = currentRecording, current.summary.id == recordingID, current.summary.sampleCount == sample.id {
+                currentRecording = current.appending(sample)
+            } else if currentRecording?.summary.id == recordingID {
+                currentRecording = try await database.recording(id: recordingID)
             }
+            // Keep the Saved tab's counts current without re-querying every recording.
+            if let summary = currentRecording?.summary, let index = recordings.firstIndex(where: { $0.id == summary.id }) {
+                recordings[index] = summary
+            }
+        } catch RecordingError.noActiveSession {
+            // A pause or finish that raced this fix; expected, not data loss.
+            Log.storage.debug("Dropped a fix that raced a pause or finish")
+        } catch {
+            Log.storage.fault("Sample save failed for \(recordingID, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            captureFailure = error.localizedDescription
             locationRecorder.stopCapture()
-            alertMessage = "Recording stopped to protect data: \(error.localizedDescription)"
+            do {
+                try await database.setState(recordingID: recordingID, from: .active, to: .paused)
+                try await reload()
+            } catch {
+                Log.storage.fault("Could not pause after sample save failure: \(error.localizedDescription, privacy: .public)")
+            }
+            alertMessage = "Capture stopped to protect data: \(error.localizedDescription) Tap Resume to try again."
         }
     }
 
@@ -197,7 +281,7 @@ final class AppModel: ObservableObject {
         guard let database else { return }
         recordings = try await database.recordings()
         if let unfinished = try await database.unfinishedRecording() {
-            currentRecording = try await database.recording(id: unfinished.id)
+            currentRecording = try await readRecording(database, unfinished.id)
         } else {
             currentRecording = nil
         }

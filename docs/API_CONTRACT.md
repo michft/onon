@@ -39,6 +39,11 @@ Exchanges the bootstrap secret for the local web cookie.
 
 ## Device Pairing
 
+The iPhone validates the QR destination as a local laptop origin and displays it
+for approval before calling the exchange endpoint. Completed Raw Recordings may
+upload only after that approval. Pairing and upload requests do not follow HTTP
+redirects. The wire schemas below are unchanged.
+
 ### `POST /api/v1/pairing-codes`
 
 Admin cookie required. Returns a short-lived code and QR payload.

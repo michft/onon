@@ -35,7 +35,13 @@ enum DeviceTokenStore {
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
         ]
-        SecItemDelete(query as CFDictionary)
+        let attributes: [String: Any] = [
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+        ]
+        let updated = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        if updated == errSecSuccess { return }
+        guard updated == errSecItemNotFound else { throw PairingError.keychain(updated) }
         var insert = query
         insert[kSecValueData as String] = data
         insert[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
@@ -70,14 +76,29 @@ enum DeviceTokenStore {
 
 enum ServerConfiguration {
     private static let key = "paired-server-url"
+    private static let approvedKey = "approved-pairing-origin"
 
     static var serverURL: URL? {
         get { UserDefaults.standard.string(forKey: key).flatMap(URL.init(string:)) }
-        set { UserDefaults.standard.set(newValue?.absoluteString, forKey: key) }
+        set {
+            UserDefaults.standard.set(newValue?.absoluteString, forKey: key)
+            if newValue == nil { UserDefaults.standard.removeObject(forKey: approvedKey) }
+        }
+    }
+
+    static var approvedServerURL: URL? {
+        guard let serverURL, let origin = try? LocalServer.origin(serverURL),
+              UserDefaults.standard.string(forKey: approvedKey) == origin.absoluteString else { return nil }
+        return origin
+    }
+
+    static func approve(_ origin: URL) {
+        serverURL = origin
+        UserDefaults.standard.set(origin.absoluteString, forKey: approvedKey)
     }
 
     static func endpoint(_ path: String) -> URL? {
-        serverURL?.appending(path: path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))
+        approvedServerURL?.appending(path: path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))
     }
 }
 
@@ -90,7 +111,7 @@ enum PairingError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidCode: "The QR code is not an Onon pairing code."
-        case .invalidServer: "The pairing code has an invalid server address."
+        case .invalidServer: "Pairing requires a local laptop address (.local, localhost or a private LAN IP), without credentials or paths."
         case let .rejected(status): "Pairing was rejected (HTTP \(status))."
         case let .keychain(status): "The device token could not be saved (Keychain \(status))."
         }

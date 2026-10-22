@@ -9,9 +9,10 @@ struct PairingView: View {
             List {
                 Section("Local server") {
                     if model.isPaired {
-                        Label("Paired", systemImage: "checkmark.shield.fill").foregroundStyle(.green)
+                        Label(model.serverReachable ? "Connected" : "Paired — server unreachable", systemImage: model.serverReachable ? "checkmark.circle.fill" : "wifi.slash")
+                            .foregroundStyle(model.serverReachable ? .green : .orange)
                         if let url = ServerConfiguration.serverURL { Text(url.absoluteString).font(.caption) }
-                        Button("Refresh map details") { Task { await model.loadMapManifest() } }
+                        Button("Check server") { Task { await model.loadMapManifest(showError: true) } }
                         Button("Sync now") { Task { await model.syncNow() } }.disabled(model.isSyncing)
                         Button("Unpair device", role: .destructive) { model.unpair() }
                     } else {
@@ -30,7 +31,7 @@ struct PairingView: View {
                 NavigationStack {
                     QRCodeScannerView { payload in
                         showScanner = false
-                        Task { await model.completePairing(payload: payload) }
+                model.receivePairing(payload: payload)
                     }
                     .ignoresSafeArea(edges: .bottom)
                     .navigationTitle("Scan pairing code")

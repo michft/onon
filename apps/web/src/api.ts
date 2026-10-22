@@ -3,10 +3,12 @@ import type { MapManifest, Orientation, PrintScale, ProfileName, RecordingSummar
 const API_BASE = import.meta.env.VITE_API_URL ?? window.location.origin;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  if (init?.body !== undefined && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   const response = await fetch(new URL(path, API_BASE), {
     ...init,
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...init?.headers }
+    headers
   });
   if (!response.ok) {
     const payload: unknown = await response.json().catch(() => null);

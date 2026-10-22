@@ -12,7 +12,7 @@ ensure_container_system
 version="$(date -u +%Y%m%dT%H%M%SZ)"
 candidate_dir="$MAP_CANDIDATES_DIR/$version"
 candidate="$candidate_dir/candidate.mbtiles"
-source_pbf="${ONON_SOURCE_PBF:-$MAP_SOURCE_DIR/australia-$version.osm.pbf}"
+source_pbf="${ONON_SOURCE_PBF:-}"
 final="$MAP_VERSIONS_DIR/sydney-$version.mbtiles"
 smoke_name="onon-map-smoke-$version"
 
@@ -23,14 +23,25 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-if [[ -n "${ONON_SOURCE_PBF:-}" ]]; then
+if [[ -n "$source_pbf" ]]; then
   [[ "$source_pbf" = "$MAP_SOURCE_DIR/"* && -s "$source_pbf" ]] \
     || die "ONON_SOURCE_PBF must be an existing non-empty file under $MAP_SOURCE_DIR"
   log "using cached OSM input: $source_pbf"
 else
-  log "downloading OSM input (kept for audit): $ONON_OSM_PBF_URL"
-  curl --fail --location --retry 3 --continue-at - --progress-bar "$ONON_OSM_PBF_URL" --output "$source_pbf.part"
-  mv "$source_pbf.part" "$source_pbf"
+  latest_source=""
+  for cached_source in "$MAP_SOURCE_DIR"/australia-*.osm.pbf; do
+    [[ -f "$cached_source" ]] || continue
+    if [[ -z "$latest_source" || "$cached_source" -nt "$latest_source" ]]; then latest_source="$cached_source"; fi
+  done
+  if [[ -n "$latest_source" ]] && file_is_fresh "$latest_source"; then
+    source_pbf="$latest_source"
+    log "using OSM input newer than $REMOTE_DOWNLOAD_MAX_AGE_DAYS days: $source_pbf"
+  else
+    source_pbf="$MAP_SOURCE_DIR/australia-$version.osm.pbf"
+    log "downloading OSM input; cache is missing or at least $REMOTE_DOWNLOAD_MAX_AGE_DAYS days old"
+    curl --fail --location --retry 3 --continue-at - --progress-bar "$ONON_OSM_PBF_URL" --output "$source_pbf.part"
+    mv "$source_pbf.part" "$source_pbf"
+  fi
 fi
 
 log "building candidate $version for bounds $ONON_SERVICE_BOUNDS"
