@@ -117,12 +117,13 @@ test, or merge-ready PR without the corresponding evidence.
 - `pnpm typecheck` and `pnpm test` passed: API 6 tests, web 6 tests.
 - API TypeScript and web production builds passed. Vite reports its existing
   large-chunk advisory.
-- iOS simulator build and all 26 unit tests passed on iPhone 17 Pro Max,
+- iOS simulator build and all 27 unit tests passed on iPhone 17 Pro Max,
   iOS 26.5. Regression coverage includes pause/finish races, sample and pause
   write failures, successful Pause/Resume/Finish transitions followed by read failures,
   stopped Finish retry after write failure or a concurrent refresh,
+  suspended Resume superseded by Pause or successful/failed Finish,
   explicit pairing approval, local-origin restrictions, and redirect rejection.
-- All five state-transition recovery regressions failed against the previous Resume
+- All six state-transition recovery regressions failed against the previous Resume
   implementation, then passed after reconciling persisted state and retaining explicit Finish retry identity.
 - iOS Release build for generic physical iPhone architecture passed with code
   signing disabled; this is build evidence, not device installation or field
