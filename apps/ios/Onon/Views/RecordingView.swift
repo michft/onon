@@ -86,7 +86,11 @@ struct RecordingView: View {
     }
 
     @ViewBuilder private var controls: some View {
-        if let state = model.currentRecording?.summary.state {
+        if model.finishNeedsRetry {
+            control("Retry finish", icon: "arrow.clockwise") { Task { await model.finish() } }
+                .tint(.red)
+                .controlSize(.large)
+        } else if let state = model.currentRecording?.summary.state {
             HStack(spacing: 12) {
                 if state == .active && model.captureFailure == nil {
                     control("Pause", icon: "pause.fill") { Task { await model.pause() } }
@@ -128,6 +132,7 @@ struct RecordingView: View {
     }
 
     private var statusText: String {
+        if model.finishNeedsRetry { return "Capture stopped — finish needs retry" }
         if model.captureFailure != nil { return "Capture stopped — save failed" }
         return switch model.currentRecording?.summary.state {
         case .active: "Recording"
@@ -137,7 +142,7 @@ struct RecordingView: View {
     }
 
     private var statusColor: Color {
-        if model.captureFailure != nil { return .red }
+        if model.captureFailure != nil || model.finishNeedsRetry { return .red }
         return switch model.currentRecording?.summary.state {
         case .active: .red
         case .paused: .orange

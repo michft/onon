@@ -91,7 +91,7 @@ Retries use the same UUID and idempotency key. Local raw data is never deleted a
 - Scrollable local saved-session list.
 - Optional QR pairing and idempotent sync to the explicitly approved local laptop.
 - Storage failures stop capture and show a retryable error, including when the
-  database cannot persist a pause; **Resume** reconciles persisted state before restarting capture and can retry a failed reload without changing raw data.
+  database cannot persist a pause; **Resume** reconciles persisted state before restarting capture and can retry a failed reload without changing raw data. A failed **Finish** keeps capture stopped and offers **Retry finish**, including when Finish committed before its reload failed.
 
 ## Field acceptance
 

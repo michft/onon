@@ -3,7 +3,7 @@
 ## Unreleased
 
 - Require explicit local-laptop destination approval before iOS pairing or automatic uploads, reject public server origins and redirects, and retain previous credentials if replacement fails.
-- Propagate SQLite read errors and show stopped capture with a working Resume action even when a storage failure prevents persisting pause or a state reload fails after a successful transition.
+- Propagate SQLite read errors and show stopped capture with a working Resume action even when a storage failure prevents persisting pause or a state reload fails after a successful transition. Failed Finish stays stopped with an explicit Retry finish action.
 - Let iOS waypoints use a location fix up to 2 minutes old by default, adjustable from 15 seconds to 5 minutes by long-pressing Waypoint, so standing still no longer blocks waypoints.
 - Add iOS unified logging for recording, location delivery, storage, sync and map loading, and a hidden capture diagnostics row (long-press the Record status card); location errors now show on screen.
 - Fix iOS recorder showing a false "Recording stopped" alert on pause; a genuine sample-save failure now pauses the recording so Resume works.

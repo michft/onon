@@ -5,18 +5,21 @@
 - `pnpm typecheck` and `pnpm test` passed: API 6 tests, web 6 tests.
 - API TypeScript and web production builds passed. Vite reports its existing
   large-chunk advisory.
-- iOS simulator build and all 23 unit tests passed on iPhone 17 Pro Max,
+- iOS simulator build and all 26 unit tests passed on iPhone 17 Pro Max,
   iOS 26.5. Regression coverage includes pause/finish races, sample and pause
-  write failures, successful state transitions followed by read failures,
+  write failures, successful Pause/Resume/Finish transitions followed by read failures,
+  stopped Finish retry after write failure or a concurrent refresh,
   explicit pairing approval, local-origin restrictions, and redirect rejection.
-- Both state-read recovery regressions failed against the previous Resume
-  implementation, then passed after reconciling persisted state.
+- All five state-transition recovery regressions failed against the previous Resume
+  implementation, then passed after reconciling persisted state and retaining explicit Finish retry identity.
 - iOS Release build for generic physical iPhone architecture passed with code
   signing disabled; this is build evidence, not device installation or field
   acceptance.
 - Shell syntax checks and all three map-style JSON parses passed.
 - Simulator screenshots in `docs/images/` show the bundled map, recording
-  diagnostics, waypoint menu, and destination approval. GPS fixes were simulated.
+  diagnostics, waypoint menu, destination approval, and stopped Finish retry.
+  GPS fixes and the temporary Finish-write fault were simulated; the fault was
+  removed after verifying successful retry.
 - Shared containers were not restarted or rebuilt. Physical GPS/background
   capture, real-laptop pairing/upload, and paper checks were not repeated.
 
