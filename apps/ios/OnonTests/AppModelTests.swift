@@ -216,6 +216,66 @@ final class AppModelTests: XCTestCase {
         XCTAssertEqual(model.recordings.first?.state, .finished)
     }
 
+    func testLaterPauseOrFinishInvalidatesSuspendedResume() async throws {
+        enum Interruption: CaseIterable { case pause, finish, failedFinish }
+        for interruption in Interruption.allCases {
+            var suspendNextRead = false
+            var releaseReload: CheckedContinuation<Void, Never>?
+            let suspended = expectation(description: "Resume reload suspended")
+            let (model, database, file, id) = try await fixture(readSummaries: { database in
+                let summaries = try await database.recordings()
+                if suspendNextRead {
+                    suspendNextRead = false
+                    suspended.fulfill()
+                    await withCheckedContinuation { releaseReload = $0 }
+                }
+                return summaries
+            })
+            defer { model.locationRecorder.stopCapture() }
+            await model.pause()
+            suspendNextRead = true
+            let resume = Task { await model.resume() }
+            await fulfillment(of: [suspended], timeout: 5)
+            guard let release = releaseReload else {
+                XCTFail("Resume did not suspend in reload")
+                return
+            }
+
+            if interruption == .failedFinish {
+                try execute("CREATE TRIGGER fail_test_finish BEFORE UPDATE OF state ON recordings WHEN NEW.state='finished' BEGIN SELECT RAISE(ABORT, 'test finish write failure'); END", at: file)
+            }
+            if interruption == .pause {
+                await model.pause()
+            } else {
+                await model.finish()
+            }
+            let failure = model.captureFailure
+            release.resume()
+            releaseReload = nil
+            await resume.value
+
+            XCTAssertFalse(model.locationRecorder.isCapturing)
+            XCTAssertEqual(model.captureFailure, failure)
+            switch interruption {
+            case .pause:
+                XCTAssertNil(model.captureFailure)
+                XCTAssertEqual(model.currentRecording?.summary.state, .paused)
+            case .finish:
+                XCTAssertNil(model.captureFailure)
+                XCTAssertNil(model.currentRecording)
+            case .failedFinish:
+                XCTAssertNotNil(model.captureFailure)
+                XCTAssertTrue(model.finishNeedsRetry)
+                await model.commit(fix())
+                let persisted = try await database.recording(id: id)
+                XCTAssertEqual(persisted?.summary.sampleCount, 0)
+                try execute("DROP TRIGGER fail_test_finish", at: file)
+                await model.finish()
+                XCTAssertNil(model.currentRecording)
+            }
+        }
+    }
+
     private func fixture(readSummaries: @escaping @MainActor (RecordingDatabase) async throws -> [RecordingSummary] = { try await $0.recordings() }, readRecording: @escaping @MainActor (RecordingDatabase, UUID) async throws -> RecordingSnapshot? = { try await $0.recording(id: $1) }) async throws -> (AppModel, RecordingDatabase, URL, UUID) {
         let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

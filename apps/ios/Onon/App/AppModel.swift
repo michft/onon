@@ -26,6 +26,7 @@ final class AppModel: ObservableObject {
     private var reachability: ReachabilitySyncTrigger?
     private var periodicSync: Task<Void, Never>?
     private var isFinishing = false
+    private var captureIntent = UUID()
     private let readSummaries: @MainActor (RecordingDatabase) async throws -> [RecordingSummary]
     private let readRecording: @MainActor (RecordingDatabase, UUID) async throws -> RecordingSnapshot?
     private let pairingExchange: @MainActor (PairingQRCode) async throws -> Void
@@ -103,12 +104,16 @@ final class AppModel: ObservableObject {
 
     func pause() async {
         guard let database, let currentRecording, !finishNeedsRetry else { return }
+        let intent = UUID()
+        captureIntent = intent
         do {
             try await database.setState(recordingID: currentRecording.summary.id, from: .active, to: .paused)
+            guard intent == captureIntent else { return }
             Log.recording.notice("Paused recording \(currentRecording.summary.id, privacy: .public)")
             locationRecorder.stopCapture()
             try await reload()
         } catch {
+            guard intent == captureIntent else { return }
             captureFailure = error.localizedDescription
             locationRecorder.stopCapture()
             alertMessage = "Capture remains stopped: \(error.localizedDescription) Tap Resume to try again."
@@ -117,10 +122,13 @@ final class AppModel: ObservableObject {
 
     func resume() async {
         guard let database, let currentRecording, !finishNeedsRetry else { return }
+        let intent = UUID()
+        captureIntent = intent
         do {
             guard let persisted = try await readRecording(database, currentRecording.summary.id) else {
                 throw RecordingError.noActiveSession
             }
+            guard intent == captureIntent, !finishNeedsRetry else { return }
             switch persisted.summary.state {
             case .paused:
                 try await database.setState(recordingID: persisted.summary.id, from: .paused, to: .active)
@@ -129,7 +137,9 @@ final class AppModel: ObservableObject {
             case .finished:
                 throw RecordingError.invalidTransition
             }
+            guard intent == captureIntent, !finishNeedsRetry else { return }
             try await reload()
+            guard intent == captureIntent, !finishNeedsRetry else { return }
             guard self.currentRecording?.summary.id == persisted.summary.id,
                   self.currentRecording?.summary.state == .active else {
                 throw RecordingError.invalidTransition
@@ -138,6 +148,7 @@ final class AppModel: ObservableObject {
             Log.recording.notice("Resumed recording \(persisted.summary.id, privacy: .public)")
             locationRecorder.startCapture()
         } catch {
+            guard intent == captureIntent, !finishNeedsRetry else { return }
             captureFailure = error.localizedDescription
             locationRecorder.stopCapture()
             alertMessage = "Capture remains stopped: \(error.localizedDescription) Tap Resume to try again."
@@ -148,6 +159,7 @@ final class AppModel: ObservableObject {
         guard let database, !isFinishing,
               let recordingID = finishingRecordingID ?? currentRecording?.summary.id else { return }
         isFinishing = true
+        captureIntent = UUID()
         finishingRecordingID = recordingID
         locationRecorder.stopCapture()
         defer { isFinishing = false }
@@ -300,6 +312,7 @@ final class AppModel: ObservableObject {
 
     func reload() async throws {
         guard let database else { return }
+        let intent = captureIntent
         let summaries = try await readSummaries(database)
         let unfinished = summaries.first { $0.state != .finished }
         let snapshot: RecordingSnapshot?
@@ -308,6 +321,7 @@ final class AppModel: ObservableObject {
         } else {
             snapshot = nil
         }
+        guard intent == captureIntent else { return }
         recordings = summaries
         currentRecording = snapshot
     }
