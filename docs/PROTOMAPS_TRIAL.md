@@ -13,7 +13,7 @@ bash scripts/start-protomaps-trial.sh
 
 Open <http://127.0.0.1:8083/protomaps.html>. Stop with Ctrl-C. Both servers bind only to loopback; tiles use port 8082 and the viewer uses 8083. The starter builds the viewer with existing Vite/MapLibre dependencies and serves static assets with Python 3. Set an absolute `ONON_DATA_ROOT` to store the trial elsewhere.
 
-Downloads live in ignored `.local/onon/protomaps-trial/`. After downloading and installing dependencies, startup/rendering needs no external network: tiles, English glyphs, icons, style and viewer assets are local. This is **host-local rendering**, not a browser/device offline tile cache. A phone still needs an integrated source and its own cached assets; see [TODO](../TODO.md).
+Downloads live in ignored `.local/onon/protomaps-trial/`. After downloading and installing dependencies, startup/rendering needs no external network: tiles, English glyphs, icons, style and viewer assets are local. This is **host-local rendering**, not a browser/device offline tile cache. A phone still needs an integrated source and its own cached assets; see [TODO](TODO.md).
 
 ## Data and appearance
 
