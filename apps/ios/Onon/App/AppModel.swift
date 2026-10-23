@@ -55,6 +55,14 @@ final class AppModel: ObservableObject {
             locationRecorder.onAcceptedLocation = { [weak self] location in
                 Task { @MainActor [weak self] in await self?.commit(location) }
             }
+            try await reload()
+            if let summary = currentRecording?.summary {
+                Log.recording.notice("Recovered \(summary.state.rawValue, privacy: .public) recording \(summary.id, privacy: .public) with \(summary.sampleCount) samples")
+            }
+            if currentRecording?.summary.state == .active {
+                locationRecorder.startCapture()
+            }
+            isReady = true
             reachability = ReachabilitySyncTrigger { [weak self] in
                 Task { @MainActor [weak self] in await self?.syncNow() }
             }
@@ -66,14 +74,6 @@ final class AppModel: ObservableObject {
                     await self?.syncNow()
                 }
             }
-            try await reload()
-            if let summary = currentRecording?.summary {
-                Log.recording.notice("Recovered \(summary.state.rawValue, privacy: .public) recording \(summary.id, privacy: .public) with \(summary.sampleCount) samples")
-            }
-            if currentRecording?.summary.state == .active {
-                locationRecorder.startCapture()
-            }
-            isReady = true
         } catch {
             Log.storage.fault("Startup failed: \(error.localizedDescription, privacy: .public)")
             alertMessage = error.localizedDescription
@@ -257,7 +257,7 @@ final class AppModel: ObservableObject {
     }
 
     func syncNow() async {
-        guard let syncService, isPaired, !isSyncing, !isPairing, pendingPairing == nil else { return }
+        guard isReady, let syncService, isPaired, !isSyncing, !isPairing, pendingPairing == nil else { return }
         isSyncing = true
         await syncService.syncPending()
         recordingRevision = UUID()

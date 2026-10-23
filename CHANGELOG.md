@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Complete iOS session recovery before enabling automatic sync, so startup cannot show Recording with capture stopped.
+
 - Restore the optional Server tab and QR scanner; show destination approval after dismissing the scanner. Skip empty cached OSM inputs during map refresh.
 
 - Require explicit local-laptop destination approval before iOS pairing or automatic uploads, reject public server origins and redirects, and retain previous credentials if replacement fails.

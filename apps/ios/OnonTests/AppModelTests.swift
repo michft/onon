@@ -396,6 +396,83 @@ final class AppModelTests: XCTestCase {
         await drainRecovery()
     }
 
+    func testStartupRecoveryStartsCaptureBeforeSyncCanRefresh() async throws {
+        let previousURL = ServerConfiguration.serverURL
+        let previousApproval = UserDefaults.standard.string(forKey: "approved-pairing-origin")
+        ServerConfiguration.serverURL = nil
+        defer {
+            ServerConfiguration.serverURL = previousURL
+            UserDefaults.standard.set(previousApproval, forKey: "approved-pairing-origin")
+        }
+        let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+        let database = try RecordingDatabase(fileURL: folder.appending(path: "test.sqlite"))
+        _ = try await database.startRecording()
+        var holdInitialRead = true
+        var holdSyncRead = true
+        var syncReadSuspended = false
+        var releaseInitial: CheckedContinuation<Void, Never>?
+        var releaseSync: CheckedContinuation<Void, Never>?
+        let initialRead = expectation(description: "Startup read active recording")
+        let syncAttempt = expectation(description: "Early sync completed or suspended its refresh")
+        let model = AppModel(database: database, readRecording: { database, id in
+            let snapshot = try await database.recording(id: id)
+            if holdInitialRead {
+                holdInitialRead = false
+                initialRead.fulfill()
+                await withCheckedContinuation { releaseInitial = $0 }
+            } else if holdSyncRead {
+                holdSyncRead = false
+                syncReadSuspended = true
+                syncAttempt.fulfill()
+                await withCheckedContinuation { releaseSync = $0 }
+            }
+            return snapshot
+        }, pairingExchange: { _ in })
+        defer { model.locationRecorder.stopCapture() }
+        let startup = Task { await model.prepare() }
+        var pairing: Task<Void, Never>?
+        func drainTasks() async {
+            holdInitialRead = false
+            holdSyncRead = false
+            releaseInitial?.resume()
+            releaseInitial = nil
+            releaseSync?.resume()
+            releaseSync = nil
+            await startup.value
+            await pairing?.value
+        }
+        do {
+            await fulfillment(of: [initialRead], timeout: 5)
+            guard releaseInitial != nil else { throw RecordingError.storage("Startup did not suspend") }
+            model.receivePairing(payload: "onon://pair?server=http%3A%2F%2Fonon.local%3A3000&code=test")
+            pairing = Task {
+                await model.confirmPairing()
+                if !syncReadSuspended { syncAttempt.fulfill() }
+            }
+            await fulfillment(of: [syncAttempt], timeout: 5)
+            holdSyncRead = false
+            releaseInitial?.resume()
+            releaseInitial = nil
+            await startup.value
+            releaseSync?.resume()
+            releaseSync = nil
+            await pairing?.value
+
+            XCTAssertTrue(model.isReady)
+            XCTAssertTrue(model.isPaired)
+            XCTAssertEqual(model.currentRecording?.summary.state, .active)
+            XCTAssertTrue(model.locationRecorder.isCapturing)
+            await model.commit(fix())
+            XCTAssertEqual(model.currentRecording?.summary.sampleCount, 1)
+        } catch {
+            await drainTasks()
+            throw error
+        }
+        await drainTasks()
+    }
+
     private func fixture(readSummaries: @escaping @MainActor (RecordingDatabase) async throws -> [RecordingSummary] = { try await $0.recordings() }, readRecording: @escaping @MainActor (RecordingDatabase, UUID) async throws -> RecordingSnapshot? = { try await $0.recording(id: $1) }) async throws -> (AppModel, RecordingDatabase, URL, UUID) {
         let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

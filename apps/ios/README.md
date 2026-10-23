@@ -86,7 +86,7 @@ Retries use the same UUID and idempotency key. Local raw data is never deleted a
 - Start, Pause, Resume, and confirmed Finish.
 - Background Core Location capture through sleep/lock.
 - Every accepted sample committed immediately to SQLite in WAL/full-sync mode.
-- Recovery of unfinished active or paused sessions.
+- Recovery of unfinished active or paused sessions before automatic sync can refresh state.
 - Exact-coordinate waypoint capture at the latest accepted GPS fix. Long-press **Waypoint** to choose how old that fix may be (15 seconds to 5 minutes, default 2 minutes); standing still produces no new fixes, so the latest one is usually still current.
 - Immutable raw samples and waypoint observations enforced with SQLite triggers.
 - Scrollable local saved-session list.
