@@ -48,38 +48,65 @@ test("reject unsafe hosts, partial LAN opt-in, malformed ports and unsafe paths 
   ]) assert.throws(() => trialConfig(env));
 });
 
+test("reject output symlinks into retained cache before preparation and preserve retained files", () => {
+  const directory = mkdtempSync(resolve(tmpdir(), "onon-protomaps-alias-"));
+  try {
+    const cache = resolve(directory, "cache");
+    mkdirSync(resolve(cache, "assets"), { recursive: true });
+    writeFileSync(resolve(cache, "sydney.pmtiles"), "retained archive");
+    writeFileSync(resolve(cache, "assets/keep"), "retained asset");
+    for (const [index, target] of [cache, resolve(cache, "assets")].entries()) {
+      const output = resolve(directory, `output-${index}`);
+      mkdirSync(resolve(output, "protomaps-trial"), { recursive: true });
+      symlinkSync(target, resolve(output, "protomaps-trial/site"));
+      assert.throws(() => trialConfig({ ONON_DATA_ROOT: output, ONON_PROTOMAPS_TRIAL_DIR: cache }), /retained|cache/i);
+    }
+    const alias = resolve(directory, "alias");
+    symlinkSync(directory, alias);
+    assert.throws(() => trialConfig({ ONON_DATA_ROOT: resolve(alias, "output-0"), ONON_PROTOMAPS_TRIAL_DIR: cache }), /retained|cache/i);
+    assert.equal(readFileSync(resolve(cache, "sydney.pmtiles"), "utf8"), "retained archive");
+    assert.equal(readFileSync(resolve(cache, "assets/keep"), "utf8"), "retained asset");
+    assert.equal(trialConfig({ ONON_DATA_ROOT: resolve(directory, "safe"), ONON_PROTOMAPS_TRIAL_DIR: cache }).trialDir, cache);
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
 function fixture() {
   const directory = mkdtempSync(resolve(tmpdir(), "onon-protomaps-http-"));
-  const config = trialConfig({ ...lan, ONON_DATA_ROOT: directory });
-  const assets = resolve(config.trialDir, "assets");
-  mkdirSync(resolve(assets, "vendor"), { recursive: true });
-  if (process.env.ONON_PROTOMAPS_TEST_CACHE) {
-    // Copy retained assets into the private fixture. Never prepare into the retained cache.
-    for (const path of ["vendor/basemaps.js", "vendor/basemaps-LICENSE.md", "fonts", "sprites"]) {
-      cpSync(resolve(process.env.ONON_PROTOMAPS_TEST_CACHE, "assets", path), resolve(assets, path), { recursive: true });
-    }
-  } else {
-    writeFileSync(resolve(assets, "vendor/basemaps.js"), `var basemaps = {
-      namedFlavor: function (flavor) { return flavor; },
-      layers: function (source, flavor) { return [
-        {id: 'background', type: 'background', paint: {'background-color': flavor === 'dark' ? '#222' : '#fff'}},
-        {id: 'roads', type: 'line', source: source, 'source-layer': 'roads', filter: ['in', 'kind', 'minor_road', 'major_road', 'highway']},
-        {id: 'labels', type: 'symbol', source: source, 'source-layer': 'roads'}
-      ]; }
-    };`);
-    writeFileSync(resolve(assets, "vendor/basemaps-LICENSE.md"), "fixture license");
-    for (const font of ["Noto Sans Regular", "Noto Sans Italic", "Noto Sans Medium"]) {
-      mkdirSync(resolve(assets, "fonts", font), { recursive: true });
-      for (const range of ["0-255", "256-511", "768-1023", "1536-1791", "7680-7935", "8192-8447"]) {
-        writeFileSync(resolve(assets, "fonts", font, `${range}.pbf`), `glyph fixture ${font} ${range}`);
+  try {
+    const config = trialConfig({ ...lan, ONON_DATA_ROOT: directory });
+    const assets = resolve(config.trialDir, "assets");
+    mkdirSync(resolve(assets, "vendor"), { recursive: true });
+    if (process.env.ONON_PROTOMAPS_TEST_CACHE) {
+      // Copy retained assets into the private fixture. Never prepare into the retained cache.
+      for (const path of ["vendor/basemaps.js", "vendor/basemaps-LICENSE.md", "fonts", "sprites"]) {
+        cpSync(resolve(process.env.ONON_PROTOMAPS_TEST_CACHE, "assets", path), resolve(assets, path), { recursive: true });
+      }
+    } else {
+      writeFileSync(resolve(assets, "vendor/basemaps.js"), `var basemaps = {
+        namedFlavor: function (flavor) { return flavor; },
+        layers: function (source, flavor) { return [
+          {id: 'background', type: 'background', paint: {'background-color': flavor === 'dark' ? '#222' : '#fff'}},
+          {id: 'roads', type: 'line', source: source, 'source-layer': 'roads', filter: ['in', 'kind', 'minor_road', 'major_road', 'highway']},
+          {id: 'labels', type: 'symbol', source: source, 'source-layer': 'roads'}
+        ]; }
+      };`);
+      writeFileSync(resolve(assets, "vendor/basemaps-LICENSE.md"), "fixture license");
+      for (const font of ["Noto Sans Regular", "Noto Sans Italic", "Noto Sans Medium"]) {
+        mkdirSync(resolve(assets, "fonts", font), { recursive: true });
+        for (const range of ["0-255", "256-511", "768-1023", "1536-1791", "7680-7935", "8192-8447"]) {
+          writeFileSync(resolve(assets, "fonts", font, `${range}.pbf`), `glyph fixture ${font} ${range}`);
+        }
+      }
+      mkdirSync(resolve(assets, "sprites/v4"), { recursive: true });
+      for (const flavor of ["light", "dark"]) for (const suffix of [".json", ".png", "@2x.json", "@2x.png"]) {
+        writeFileSync(resolve(assets, `sprites/v4/${flavor}${suffix}`), suffix.endsWith("json") ? "{}" : "sprite fixture");
       }
     }
-    mkdirSync(resolve(assets, "sprites/v4"), { recursive: true });
-    for (const flavor of ["light", "dark"]) for (const suffix of [".json", ".png", "@2x.json", "@2x.png"]) {
-      writeFileSync(resolve(assets, `sprites/v4/${flavor}${suffix}`), suffix.endsWith("json") ? "{}" : "sprite fixture");
-    }
+    return { directory, config };
+  } catch (error) {
+    rmSync(directory, { recursive: true, force: true });
+    throw error;
   }
-  return { directory, config };
 }
 
 function visible(layer: StyleSpecification["layers"][number], properties: Record<string, unknown>) {

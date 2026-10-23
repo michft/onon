@@ -1,6 +1,6 @@
 import { createServer, request } from "node:http";
 import { cpSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
-import { isAbsolute, normalize, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, normalize, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { createContext, runInContext } from "node:vm";
@@ -31,6 +31,20 @@ function absoluteDirectory(path: string, name: string) {
   return path;
 }
 
+function canonicalPath(path: string): string {
+  try { return realpathSync(path); }
+  catch (error) {
+    if (!error || typeof error !== "object" || !("code" in error) || error.code !== "ENOENT") throw error;
+    const parent = dirname(path);
+    if (parent === path) throw error;
+    return resolve(canonicalPath(parent), basename(path));
+  }
+}
+
+function contains(parent: string, path: string) {
+  return path === parent || path.startsWith(`${parent}${sep}`);
+}
+
 function port(value: string, name: string) {
   if (!/^[1-9]\d{0,4}$/.test(value) || Number(value) > 65535) throw new Error(`Invalid ${name}`);
   return Number(value);
@@ -57,7 +71,12 @@ export function trialConfig(env: NodeJS.ProcessEnv = process.env) {
   const dataRoot = absoluteDirectory(env.ONON_DATA_ROOT ?? resolve(repo, ".local/onon"), "ONON_DATA_ROOT");
   const trialDir = absoluteDirectory(env.ONON_PROTOMAPS_TRIAL_DIR ?? resolve(dataRoot, "protomaps-trial"), "ONON_PROTOMAPS_TRIAL_DIR");
   const siteDir = resolve(dataRoot, "protomaps-trial/site");
-  if (trialDir === siteDir || trialDir.startsWith(`${siteDir}/`)) throw new Error("Trial cache must be outside the published site");
+  const site = canonicalPath(siteDir);
+  const cache = canonicalPath(trialDir);
+  if (contains(site, cache) || ["sydney.pmtiles", "assets", "tools", "provenance"].some((path) => {
+    const retained = canonicalPath(resolve(trialDir, path));
+    return contains(site, retained) || contains(retained, site);
+  })) throw new Error("Published site must not overlap retained cache resources, including through symlinks");
   return { bind, host, webPort, tilePort, trialDir, siteDir,
     origin: `http://${host}:${webPort}`, tileOrigin: `http://127.0.0.1:${tilePort}` };
 }
