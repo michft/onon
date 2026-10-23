@@ -48,24 +48,28 @@ test("reject unsafe hosts, partial LAN opt-in, malformed ports and unsafe paths 
   ]) assert.throws(() => trialConfig(env));
 });
 
-test("reject output symlinks into retained cache before preparation and preserve retained files", () => {
+test("reject output aliases into retained cache, filesystem root or unrelated data and preserve files", () => {
   const directory = mkdtempSync(resolve(tmpdir(), "onon-protomaps-alias-"));
   try {
     const cache = resolve(directory, "cache");
     mkdirSync(resolve(cache, "assets"), { recursive: true });
     writeFileSync(resolve(cache, "sydney.pmtiles"), "retained archive");
     writeFileSync(resolve(cache, "assets/keep"), "retained asset");
-    for (const [index, target] of [cache, resolve(cache, "assets")].entries()) {
+    const unrelated = resolve(directory, "unrelated");
+    mkdirSync(unrelated);
+    writeFileSync(resolve(unrelated, "keep"), "other user data");
+    for (const [index, target] of [cache, resolve(cache, "assets"), "/", unrelated].entries()) {
       const output = resolve(directory, `output-${index}`);
       mkdirSync(resolve(output, "protomaps-trial"), { recursive: true });
       symlinkSync(target, resolve(output, "protomaps-trial/site"));
-      assert.throws(() => trialConfig({ ONON_DATA_ROOT: output, ONON_PROTOMAPS_TRIAL_DIR: cache }), /retained|cache/i);
+      assert.throws(() => trialConfig({ ONON_DATA_ROOT: output, ONON_PROTOMAPS_TRIAL_DIR: cache }), /retained|cache|output/i);
     }
     const alias = resolve(directory, "alias");
     symlinkSync(directory, alias);
-    assert.throws(() => trialConfig({ ONON_DATA_ROOT: resolve(alias, "output-0"), ONON_PROTOMAPS_TRIAL_DIR: cache }), /retained|cache/i);
+    assert.throws(() => trialConfig({ ONON_DATA_ROOT: resolve(alias, "output-0"), ONON_PROTOMAPS_TRIAL_DIR: cache }), /retained|cache|output/i);
     assert.equal(readFileSync(resolve(cache, "sydney.pmtiles"), "utf8"), "retained archive");
     assert.equal(readFileSync(resolve(cache, "assets/keep"), "utf8"), "retained asset");
+    assert.equal(readFileSync(resolve(unrelated, "keep"), "utf8"), "other user data");
     assert.equal(trialConfig({ ONON_DATA_ROOT: resolve(directory, "safe"), ONON_PROTOMAPS_TRIAL_DIR: cache }).trialDir, cache);
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });

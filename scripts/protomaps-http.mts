@@ -42,7 +42,7 @@ function canonicalPath(path: string): string {
 }
 
 function contains(parent: string, path: string) {
-  return path === parent || path.startsWith(`${parent}${sep}`);
+  return path === parent || path.startsWith(parent.endsWith(sep) ? parent : `${parent}${sep}`);
 }
 
 function port(value: string, name: string) {
@@ -72,6 +72,10 @@ export function trialConfig(env: NodeJS.ProcessEnv = process.env) {
   const trialDir = absoluteDirectory(env.ONON_PROTOMAPS_TRIAL_DIR ?? resolve(dataRoot, "protomaps-trial"), "ONON_PROTOMAPS_TRIAL_DIR");
   const siteDir = resolve(dataRoot, "protomaps-trial/site");
   const site = canonicalPath(siteDir);
+  const outputRoot = canonicalPath(dataRoot);
+  if (outputRoot === sep || site !== resolve(outputRoot, "protomaps-trial/site")) {
+    throw new Error("Published site must use its configured output path without symlink aliases");
+  }
   const cache = canonicalPath(trialDir);
   if (contains(site, cache) || ["sydney.pmtiles", "assets", "tools", "provenance"].some((path) => {
     const retained = canonicalPath(resolve(trialDir, path));
