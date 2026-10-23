@@ -21,12 +21,6 @@ struct RecordingsView: View {
                 if model.recordings.isEmpty { ContentUnavailableView("No recordings", systemImage: "figure.walk") }
             }
             .navigationTitle("Saved recordings")
-            .toolbar {
-                Button { Task { await model.syncNow() } } label: {
-                    if model.isSyncing { ProgressView() } else { Label("Sync Now", systemImage: "arrow.triangle.2.circlepath") }
-                }
-                .disabled(!model.isPaired || model.isSyncing)
-            }
         }
     }
 

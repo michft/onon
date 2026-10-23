@@ -1,8 +1,25 @@
 import CoreLocation
+import SQLite3
 import XCTest
 @testable import Onon
 
 final class RecordingDatabaseTests: XCTestCase {
+    func testReadErrorsAreNotReportedAsEndOfRows() throws {
+        var connection: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(":memory:", &connection), SQLITE_OK)
+        defer { sqlite3_close(connection) }
+        XCTAssertEqual(sqlite3_create_function_v2(connection, "fail_read", 0, SQLITE_UTF8, nil, { context, _, _ in
+            sqlite3_result_error_code(context, SQLITE_IOERR)
+        }, nil, nil, nil), SQLITE_OK)
+        var statement: OpaquePointer?
+        XCTAssertEqual(sqlite3_prepare_v2(connection, "SELECT fail_read()", -1, &statement, nil), SQLITE_OK)
+        defer { sqlite3_finalize(statement) }
+
+        XCTAssertThrowsError(try RecordingDatabase.readRow(statement)) { error in
+            guard case RecordingError.storage = error else { return XCTFail("Read error was misclassified: \(error)") }
+        }
+    }
+
     func testUnfinishedRecordingRecoversWithCommittedSamplesAndWaypoint() async throws {
         let database = try temporaryDatabase()
         let id = try await database.startRecording(at: Date(timeIntervalSince1970: 100))
@@ -53,11 +70,11 @@ final class RecordingDatabaseTests: XCTestCase {
         try await database.setState(recordingID: id, from: .active, to: .paused)
         let location = CLLocation(latitude: -33.8688, longitude: 151.2093)
 
-        await XCTAssertThrowsErrorAsync {
-            try await database.appendSample(
-                recordingID: id,
-                locationSample: RawSample(sequence: 0, location: location)
-            )
+        do {
+            try await database.appendSample(recordingID: id, locationSample: RawSample(sequence: 0, location: location))
+            XCTFail("Expected a paused recording to reject samples")
+        } catch {
+            XCTAssertEqual(error as? RecordingError, .noActiveSession)
         }
         await XCTAssertThrowsErrorAsync {
             try await database.appendWaypoint(
@@ -90,6 +107,27 @@ final class RecordingDatabaseTests: XCTestCase {
         XCTAssertEqual(first, second)
         XCTAssertEqual(upload.samples.map(\.sequence), [0, 1])
         XCTAssertEqual(pendingIDs, [id])
+    }
+
+    func testAppendedSamplesMatchStoredRecordingWithoutReload() async throws {
+        let database = try temporaryDatabase()
+        let id = try await database.startRecording()
+        let started = try await database.recording(id: id)
+        var snapshot = try XCTUnwrap(started)
+        for offset in 0..<3 {
+            let location = CLLocation(
+                coordinate: CLLocationCoordinate2D(latitude: -33.8688 + Double(offset) * 0.0001, longitude: 151.2093),
+                altitude: 12, horizontalAccuracy: 4, verticalAccuracy: 6, course: 90, speed: 1.2,
+                timestamp: Date(timeIntervalSince1970: 100 + Double(offset))
+            )
+            // A stale caller-supplied sequence must not leak into the stored or returned sample.
+            let sample = try await database.appendSample(recordingID: id, locationSample: RawSample(sequence: 99, location: location))
+            XCTAssertEqual(sample.id, offset)
+            snapshot = snapshot.appending(sample)
+        }
+
+        let stored = try await database.recording(id: id)
+        XCTAssertEqual(snapshot, stored)
     }
 
     private func temporaryDatabase() throws -> RecordingDatabase {

@@ -3,15 +3,17 @@ import SwiftUI
 struct PairingView: View {
     @EnvironmentObject private var model: AppModel
     @State private var showScanner = false
+    @State private var scannedPayload: String?
 
     var body: some View {
         NavigationStack {
             List {
                 Section("Local server") {
                     if model.isPaired {
-                        Label("Paired", systemImage: "checkmark.shield.fill").foregroundStyle(.green)
+                        Label(model.serverReachable ? "Connected" : "Paired — server unreachable", systemImage: model.serverReachable ? "checkmark.circle.fill" : "wifi.slash")
+                            .foregroundStyle(model.serverReachable ? .green : .orange)
                         if let url = ServerConfiguration.serverURL { Text(url.absoluteString).font(.caption) }
-                        Button("Refresh map details") { Task { await model.loadMapManifest() } }
+                        Button("Check server") { Task { await model.loadMapManifest(showError: true) } }
                         Button("Sync now") { Task { await model.syncNow() } }.disabled(model.isSyncing)
                         Button("Unpair device", role: .destructive) { model.unpair() }
                     } else {
@@ -22,15 +24,19 @@ struct PairingView: View {
                 Section("Field use") {
                     Label("Raw recordings stay on this iPhone after sync", systemImage: "internaldrive")
                     Label("Always location access enables lock-screen capture", systemImage: "lock.iphone")
-                    Label("Download a detailed area before leaving Wi-Fi", systemImage: "map")
+                    Label("Bundled Sydney map works offline", systemImage: "map")
                 }
             }
             .navigationTitle("Server")
-            .sheet(isPresented: $showScanner) {
+            .sheet(isPresented: $showScanner, onDismiss: {
+                guard let payload = scannedPayload else { return }
+                scannedPayload = nil
+                model.receivePairing(payload: payload)
+            }) {
                 NavigationStack {
                     QRCodeScannerView { payload in
+                        scannedPayload = payload
                         showScanner = false
-                        Task { await model.completePairing(payload: payload) }
                     }
                     .ignoresSafeArea(edges: .bottom)
                     .navigationTitle("Scan pairing code")

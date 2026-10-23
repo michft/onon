@@ -9,6 +9,9 @@ struct OnonApp: App {
             RootView()
                 .environmentObject(model)
                 .task { await model.prepare() }
+                .onOpenURL { url in
+                    model.receivePairing(payload: url.absoluteString)
+                }
         }
     }
 }

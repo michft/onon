@@ -39,7 +39,7 @@ h2 { margin-bottom: 0.65rem; font-size: 1rem; }
 .recordings button { width: 100%; display: grid; gap: 0.15rem; text-align: left; }
 .recordings span, .recordings small { font-size: 0.72rem; }
 .pairing { margin-top: 0.6rem; display: grid; justify-items: center; gap: 0.25rem; }
-.pairing img { width: 150px; height: 150px; }
+.pairing img { width: 220px; height: 220px; image-rendering: pixelated; }
 .pairing strong { letter-spacing: 0.25em; font-size: 1.2rem; }
 .symbol-row { display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; padding: 0.4rem 0; border-top: 1px solid #d1d4cf; font-size: 0.78rem; }
 .symbol-row > :first-child { margin-right: auto; }

@@ -48,7 +48,9 @@ final class OfflineMapManager: ObservableObject {
     @Published private(set) var serviceBounds: OfflineBounds?
     @Published private(set) var overviewMaxZoom: Double = 11
     @Published private(set) var detailMaxZoom: Double = 14
-    @Published var lastError: String?
+    @Published var lastError: String? {
+        didSet { if let lastError { Log.map.error("\(lastError, privacy: .public)") } }
+    }
 
     private struct Context: Codable {
         let id: UUID
@@ -124,7 +126,9 @@ final class OfflineMapManager: ObservableObject {
     }
 
     func estimatedBytes(bounds: OfflineBounds, minimumZoom: Double, maximumZoom: Double) -> Int64 {
-        let tileCount = (Int(minimumZoom.rounded(.down))...Int(maximumZoom.rounded(.down))).reduce(0.0) { total, zoom in
+        let lowest = Int(minimumZoom.rounded(.down)), highest = Int(maximumZoom.rounded(.down))
+        guard lowest <= highest else { return 0 }
+        let tileCount = (lowest...highest).reduce(0.0) { total, zoom in
             let side = pow(2, Double(zoom))
             let westX = (bounds.west + 180) / 360 * side
             let eastX = (bounds.east + 180) / 360 * side
@@ -140,6 +144,7 @@ final class OfflineMapManager: ObservableObject {
 
     private func add(name: String, bounds: OfflineBounds, minimumZoom: Double, maximumZoom: Double) {
         guard let styleURL else { lastError = "Pair first to load the local map style."; return }
+        guard minimumZoom <= maximumZoom else { lastError = "The map server reported an invalid zoom range."; return }
         let id = UUID()
         let context = Context(id: id, name: name, bounds: bounds, minimumZoom: minimumZoom, maximumZoom: maximumZoom)
         guard let data = try? JSONEncoder().encode(context) else { return }
@@ -180,6 +185,7 @@ final class OfflineMapManager: ObservableObject {
     }
 
     private func fail(pack: MLNOfflinePack, message: String) {
+        Log.map.error("Offline pack failed: \(pack.progress.countOfResourcesCompleted) of \(pack.progress.countOfResourcesExpected) resources")
         guard let context = try? JSONDecoder().decode(Context.self, from: pack.context),
               let index = areas.firstIndex(where: { $0.id == context.id }) else { return }
         areas[index].state = .failed

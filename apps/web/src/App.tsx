@@ -33,17 +33,18 @@ export function App(): React.JSX.Element {
       .catch((error: unknown) => setMessage(errorMessage(error)));
   }, []);
 
-  const refreshRecordings = async (): Promise<void> => {
+  const refreshRecordings = async (announceUnlock = false): Promise<void> => {
     try {
       const next = await api.recordings();
       setRecordings(next);
       setLocked(false);
+      if (announceUnlock) setMessage("Workspace unlocked for this browser session.");
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) setLocked(true);
       else setMessage(errorMessage(error));
     }
   };
-  useEffect(() => { void refreshRecordings(); }, []);
+  useEffect(() => { void refreshRecordings(true); }, []);
 
   const run = async (operation: () => Promise<void>): Promise<void> => {
     setBusy(true);
@@ -159,9 +160,9 @@ export function App(): React.JSX.Element {
               <h2>Device Pairing</h2>
               <button disabled={busy} onClick={() => void run(async () => {
                 const value = await api.createPairingCode();
-                setPairing({ ...value, qrImage: await QRCode.toDataURL(value.qrPayload, { width: 180, margin: 1 }) });
+                setPairing({ ...value, qrImage: await QRCode.toDataURL(value.qrPayload, { width: 240, margin: 1 }) });
               })}>Pair iPhone</button>
-              {pairing && <div className="pairing"><img src={pairing.qrImage} alt={`Pairing QR code ${pairing.code}`} /><strong>{pairing.code}</strong><small>Expires {new Date(pairing.expiresAt).toLocaleTimeString()}</small></div>}
+              {pairing && <div className="pairing"><img src={pairing.qrImage} alt={`Pairing QR code ${pairing.code}`} /><strong>{pairing.code}</strong><small>Expires {new Date(pairing.expiresAt).toLocaleTimeString()}</small><small>On iPhone: scan with Camera, open Onon, then confirm this laptop as the pairing destination.</small></div>}
             </section>
           </aside>
 
@@ -170,11 +171,11 @@ export function App(): React.JSX.Element {
             <div className="map-tools panel" aria-label="Trail editing tools">
               <h2>Trail tools</h2>
               <div className="button-row">
-                <ToolButton value="waypoint" current={mode} set={setMode}>Add Waypoint</ToolButton>
-                <ToolButton value="arrow" current={mode} set={setMode}>Add Arrow</ToolButton>
-                <ToolButton value="trim-start" current={mode} set={setMode}>Trim start</ToolButton>
-                <ToolButton value="trim-end" current={mode} set={setMode}>Trim end</ToolButton>
-                <ToolButton value="remove-range" current={mode} set={setMode}>Remove section</ToolButton>
+                <ToolButton value="waypoint" current={mode} set={setMode} disabled={!trail || busy}>Add Waypoint</ToolButton>
+                <ToolButton value="arrow" current={mode} set={setMode} disabled={!trail || busy}>Add Arrow</ToolButton>
+                <ToolButton value="trim-start" current={mode} set={setMode} disabled={!trail || busy}>Trim start</ToolButton>
+                <ToolButton value="trim-end" current={mode} set={setMode} disabled={!trail || busy}>Trim end</ToolButton>
+                <ToolButton value="remove-range" current={mode} set={setMode} disabled={!trail || busy}>Remove section</ToolButton>
                 <button disabled={!trail?.canUndo || busy} onClick={() => trail && void run(async () => setTrail(await api.history(trail.id, "undo")))}>Undo</button>
                 <button disabled={!trail?.canRedo || busy} onClick={() => trail && void run(async () => setTrail(await api.history(trail.id, "redo")))}>Redo</button>
               </div>
@@ -192,8 +193,8 @@ export function App(): React.JSX.Element {
   );
 }
 
-function ToolButton(props: { value: EditMode; current: EditMode; set: (mode: EditMode) => void; children: React.ReactNode }): React.JSX.Element {
-  return <button className={props.current === props.value ? "active" : ""} aria-pressed={props.current === props.value} onClick={() => props.set(props.current === props.value ? "inspect" : props.value)}>{props.children}</button>;
+function ToolButton(props: { value: EditMode; current: EditMode; set: (mode: EditMode) => void; disabled?: boolean; children: React.ReactNode }): React.JSX.Element {
+  return <button disabled={props.disabled} className={props.current === props.value ? "active" : ""} aria-pressed={props.current === props.value} onClick={() => props.set(props.current === props.value ? "inspect" : props.value)}>{props.children}</button>;
 }
 
 function SymbolEditor(props: {

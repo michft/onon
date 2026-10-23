@@ -4,6 +4,12 @@
 
 - Web administration starts by exchanging the bootstrap token for an HTTP-only, same-site cookie.
 - iPhone pairing uses a one-time code that expires after ten minutes.
+- Incoming QR links stage a local laptop destination for explicit approval before
+  exchanging credentials or enabling uploads. Existing pairings without approved
+  origin metadata must be approved again with a new QR.
+- iOS accepts only `.local`, localhost and private LAN IP server origins, without
+  URL credentials, non-root paths, query strings or fragments. Pairing and upload
+  requests reject redirects before forwarding data.
 - The iPhone receives a random device token and stores it in Keychain.
 - Device upload retries are authenticated and idempotent.
 - PostgreSQL is not published to the LAN.

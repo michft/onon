@@ -70,7 +70,10 @@ actor RecordingDatabase {
         }
     }
 
-    func appendSample(recordingID: UUID, locationSample: RawSample) throws {
+    @discardableResult
+    func appendSample(recordingID: UUID, locationSample: RawSample) throws -> RawSample {
+        // Checked inside the actor so callers can tell a fix that raced a pause or finish from a storage failure.
+        guard try state(recordingID: recordingID) == .active else { throw RecordingError.noActiveSession }
         let sequence = try nextSequence(recordingID: recordingID)
         try run(
             """
@@ -88,6 +91,20 @@ actor RecordingDatabase {
                 .optionalDouble(locationSample.course),
             ]
         )
+        return RawSample(
+            id: sequence, recordedAt: locationSample.recordedAt,
+            latitude: locationSample.latitude, longitude: locationSample.longitude,
+            horizontalAccuracy: locationSample.horizontalAccuracy, altitude: locationSample.altitude,
+            verticalAccuracy: locationSample.verticalAccuracy, speed: locationSample.speed,
+            course: locationSample.course
+        )
+    }
+
+    private func state(recordingID: UUID) throws -> RecordingState? {
+        let statement = try prepare("SELECT state FROM recordings WHERE id = ?", bindings: [.text(recordingID.uuidString)])
+        defer { sqlite3_finalize(statement) }
+        guard try Self.readRow(statement) else { return nil }
+        return RecordingState(rawValue: textColumn(statement, 0))
     }
 
     private func nextSequence(recordingID: UUID) throws -> Int {
@@ -96,7 +113,7 @@ actor RecordingDatabase {
             bindings: [.text(recordingID.uuidString)]
         )
         defer { sqlite3_finalize(statement) }
-        guard sqlite3_step(statement) == SQLITE_ROW else { throw lastError() }
+        guard try Self.readRow(statement) else { throw lastError() }
         return Int(sqlite3_column_int64(statement, 0))
     }
 
@@ -130,7 +147,7 @@ actor RecordingDatabase {
         let statement = try prepare("SELECT id FROM recordings WHERE state = 'finished' AND sync_state != 'confirmed' ORDER BY started_at")
         defer { sqlite3_finalize(statement) }
         var ids: [UUID] = []
-        while sqlite3_step(statement) == SQLITE_ROW {
+        while try Self.readRow(statement) {
             if let id = UUID(uuidString: textColumn(statement, 0)) { ids.append(id) }
         }
         return ids
@@ -178,6 +195,8 @@ actor RecordingDatabase {
                 longitude REAL NOT NULL,
                 horizontal_accuracy REAL NOT NULL
             );
+            CREATE INDEX IF NOT EXISTS waypoint_observations_by_recording
+                ON waypoint_observations(recording_id, recorded_at);
             CREATE TRIGGER IF NOT EXISTS samples_are_immutable_update
                 BEFORE UPDATE ON samples BEGIN SELECT RAISE(ABORT, 'raw samples are immutable'); END;
             CREATE TRIGGER IF NOT EXISTS samples_are_immutable_delete
@@ -222,7 +241,7 @@ actor RecordingDatabase {
         )
         defer { sqlite3_finalize(statement) }
         var values: [RawSample] = []
-        while sqlite3_step(statement) == SQLITE_ROW {
+        while try Self.readRow(statement) {
             values.append(RawSample(
                 id: Int(sqlite3_column_int64(statement, 0)),
                 recordedAt: Date(timeIntervalSince1970: sqlite3_column_double(statement, 1)),
@@ -242,7 +261,7 @@ actor RecordingDatabase {
         )
         defer { sqlite3_finalize(statement) }
         var values: [WaypointObservation] = []
-        while sqlite3_step(statement) == SQLITE_ROW {
+        while try Self.readRow(statement) {
             guard let waypointID = UUID(uuidString: textColumn(statement, 0)) else { continue }
             values.append(WaypointObservation(
                 id: waypointID, recordedAt: Date(timeIntervalSince1970: sqlite3_column_double(statement, 1)),
@@ -265,7 +284,7 @@ actor RecordingDatabase {
         )
         defer { sqlite3_finalize(statement) }
         var values: [RecordingSummary] = []
-        while sqlite3_step(statement) == SQLITE_ROW {
+        while try Self.readRow(statement) {
             guard
                 let id = UUID(uuidString: textColumn(statement, 0)),
                 let state = RecordingState(rawValue: textColumn(statement, 3)),
@@ -302,6 +321,14 @@ actor RecordingDatabase {
             throw error
         }
         return statement
+    }
+
+    static func readRow(_ statement: OpaquePointer?) throws -> Bool {
+        switch sqlite3_step(statement) {
+        case SQLITE_ROW: return true
+        case SQLITE_DONE: return false
+        default: throw RecordingError.storage(String(cString: sqlite3_errmsg(sqlite3_db_handle(statement))))
+        }
     }
 
     private func run(_ sql: String, _ bindings: [Binding]) throws {

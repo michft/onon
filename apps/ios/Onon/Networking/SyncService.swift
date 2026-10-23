@@ -21,12 +21,28 @@ actor SyncService {
         syncing = true
         defer { syncing = false }
 
-        guard
-            let endpoint = ServerConfiguration.endpoint("api/v1/recordings"),
-            let token = try? DeviceTokenStore.load()
-        else { return }
+        guard let endpoint = ServerConfiguration.endpoint("api/v1/recordings") else {
+            Log.sync.debug("Sync skipped: no paired server")
+            return
+        }
+        let token: String
+        do {
+            guard let stored = try DeviceTokenStore.load() else {
+                Log.sync.notice("Sync skipped: no device token")
+                return
+            }
+            token = stored
+        } catch {
+            Log.sync.error("Sync skipped: \(error.localizedDescription, privacy: .public)")
+            return
+        }
 
-        let ids = (try? await database.pendingRecordingIDs()) ?? []
+        let ids: [UUID]
+        do { ids = try await database.pendingRecordingIDs() } catch {
+            Log.sync.error("Could not list pending recordings: \(error.localizedDescription, privacy: .public)")
+            return
+        }
+        if !ids.isEmpty { Log.sync.notice("Uploading \(ids.count) pending recording(s)") }
         for id in ids {
             do {
                 guard let snapshot = try await database.recording(id: id) else { continue }
@@ -38,7 +54,7 @@ actor SyncService {
                 request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
                 request.setValue(id.uuidString, forHTTPHeaderField: "Idempotency-Key")
                 request.httpBody = try APIJSON.encoder.encode(upload)
-                let (data, response) = try await session.data(for: request)
+                let (data, response) = try await session.data(for: request, delegate: RejectServerRedirects())
                 guard let http = response as? HTTPURLResponse, [200, 201].contains(http.statusCode) else {
                     throw SyncError.rejected((response as? HTTPURLResponse)?.statusCode ?? 0)
                 }
@@ -47,8 +63,12 @@ actor SyncService {
                     throw SyncError.invalidReceipt
                 }
                 try await database.setSyncState(recordingID: id, state: .confirmed, serverRecordingID: receipt.recordingId)
+                Log.sync.notice("Recording \(id, privacy: .public) confirmed (\(receipt.status, privacy: .public))")
             } catch {
-                try? await database.setSyncState(recordingID: id, state: .failed)
+                Log.sync.error("Recording \(id, privacy: .public) upload failed: \(error.localizedDescription, privacy: .public)")
+                do { try await database.setSyncState(recordingID: id, state: .failed) } catch {
+                    Log.storage.error("Could not mark \(id, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+                }
             }
         }
     }
