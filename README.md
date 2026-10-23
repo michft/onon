@@ -14,15 +14,11 @@ scripts/status-local.sh
 Open `http://<ONON_PUBLIC_HOST>:<ONON_WEB_PORT>` using values from git-ignored
 `infra/config/local.env`, then unlock with its `ADMIN_TOKEN`.
 
-Before building the iPhone app, run `pnpm install --frozen-lockfile` and
-`scripts/prepare-ios-map.sh` to prepare its bundled offline map. Follow the
-[iOS setup guide](apps/ios/README.md), open `apps/ios/Onon.xcodeproj` in Xcode,
-select a personal development team, then install on iPhone.
+Before building for iPhone, run `pnpm install --frozen-lockfile` and
+`scripts/prepare-ios-map.sh`. Follow the [iOS requirements](apps/ios/README.md#requirements),
+then open `apps/ios/Onon.xcodeproj`, select a personal development team and install.
 
-Product language: [CONTEXT.md](./CONTEXT.md). Approved scope and acceptance
-tests: [PLAN.md](./PLAN.md). Integration boundary:
-[docs/API_CONTRACT.md](./docs/API_CONTRACT.md). Validation guide:
-[docs/TESTING.md](./docs/TESTING.md).
+Project context, plans, validation, and operating guidance live in [docs/](docs/).
 
 ## Parts
 

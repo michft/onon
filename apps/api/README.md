@@ -18,7 +18,7 @@ Run `pnpm migrate` before `pnpm start`. The migration adds database triggers whi
 
 For a production image, run the web build, copy `apps/web/dist/` to `apps/api/public/`, then run the API build. Keep `apps/api/migrations/` beside `apps/api/dist/`. Run `pnpm migrate:prod` before `pnpm start:prod`; the API serves the copied workspace with SPA fallback while reserving `/api`, `/health`, and `/styles`.
 
-The published native/web contract is [`../../docs/API_CONTRACT.md`](../../docs/API_CONTRACT.md). Additional web-only symbol operations are:
+The published native/web contract is [project context](../../docs/CONTEXT.md#api-contract). Additional web-only symbol operations are:
 
 - `PATCH|DELETE /api/v1/trail-overlays/:trailOverlayId/waypoints/:waypointId`
 - `PATCH|DELETE /api/v1/trail-overlays/:trailOverlayId/direction-arrows/:arrowId`
