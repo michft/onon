@@ -113,6 +113,16 @@ test, or merge-ready PR without the corresponding evidence.
 
 ## Recorder publication validation — 2026-10-23 (Australia/Sydney)
 
+Inherited evidence from recorder publication, not tests/builds rerun by the
+subsequent documentation-only PR. Final native source revision:
+`91f54969734317da2bfa2be502f7c7cb77c6e475` (PR #3 head), integrated into `main`
+by `f7245c0f76864763716ac56bb30d12367bd728ed`.
+The 31 iOS tests and generic iPhone Release build cover that final native source.
+API/web tests, typechecks and production builds were run earlier in the same
+publication stack; their TypeScript source and package files are unchanged
+between initial publication revision `0a873b4f87ae41506804009a5656abc4e9be5b74`
+and the final native revision. They were not rerun for the later recorder fixes.
+
 - `pnpm typecheck` and `pnpm test` passed: API 6 tests, web 6 tests.
 - API TypeScript and web production builds passed. Vite reports its existing
   large-chunk advisory.

@@ -9,9 +9,12 @@ consolidated docs are preserved alongside the reviewed source and validation.
 
 Delivered in source: bundled Sydney Protomaps surface map with labels and light/dark
 appearance; separate GPS/Waypoint overlay; durable recorder and retryable recovery;
-explicit local-server pairing approval and automatic/manual sync. Publication checks
-passed 31 iOS tests, 6 API tests and 6 web tests, plus builds. These results and
-physical limits belong in [TESTING.md](TESTING.md#recorder-publication-validation--2026-10-23-australiasydney).
+explicit local-server pairing approval and automatic/manual sync. Inherited recorder-publication evidence records
+31 iOS tests and an iPhone-architecture Release build at source revision
+`91f54969734317da2bfa2be502f7c7cb77c6e475`. API 6/web 6 tests, typechecks and
+production builds were earlier checks on unchanged TypeScript source in that
+publication stack. This documentation-only follow-up did not rerun them.
+Their provenance and physical limits belong in [TESTING.md](TESTING.md#recorder-publication-validation--2026-10-23-australiasydney).
 
 ## Remaining work
 
