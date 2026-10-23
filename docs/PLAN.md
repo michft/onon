@@ -1,31 +1,50 @@
-# Onon MVP Plan
+# Onon plan
 
-**Status:** Implemented — machine validation complete; physical acceptance pending
-**Approval:** Granted by user before implementation began.
+## Status — 2026-10-23 (Australia/Sydney)
 
-## Implementation validation — 2026-07-21
+The native recorder/map and recovery changes from PR #3 are on `main` at
+`f7245c0f`. PR #4 merged into the already-merged recorder branch, so its approved
+docs require this follow-up before they are integrated into `main`. The local
+consolidated docs are preserved alongside the reviewed source and validation.
 
-- Built the Sydney OpenMapTiles archive for the approved bounds: 451 vector
-  tiles, zoom 0–14, 22 MB, with a version manifest and atomic active symlink.
-- Ran PostgreSQL 17, TileServer GL 5.6, Planetiler 0.10.1, and the Web/API image
-  as ARM64 Apple containers. The active PostgreSQL volume is a 20 GB Apple
-  managed volume; restart persistence, backup, staged restore, and clean
-  bootstrap passed.
-- Exercised pairing, token exchange, idempotent recording upload, immutable raw
-  samples, Trail Overlay derivation, bad-section removal, undo/redo, waypoint
-  add/move, Direction Arrow add/move/flip, manifest delivery, and PDF export
-  against the live containers.
-- Rendered all three web profiles from local vector tiles in a real browser with
-  zero console errors or warnings. Verified A4 portrait and landscape PDFs for
-  all profiles visually, including Trail, circle-dot Waypoint, Direction Arrow,
-  legend, scale bar, north arrow, and attribution.
-- Resolved Swift packages, built, installed, and launched the SwiftUI app in the
-  iOS simulator. Six iOS tests passed, including durable SQLite migration and
-  paused-recording write protection. Background location declarations and
-  MapLibre runtime linkage were verified.
-- The final running application database is clean; machine validation fixtures
-  were removed. The target-iPhone lock/sleep walk, airplane-mode field session,
-  and physical paper/LED checks remain the hardware acceptance listed below.
+Delivered in source: bundled Sydney Protomaps surface map with labels and light/dark
+appearance; separate GPS/Waypoint overlay; durable recorder and retryable recovery;
+explicit local-server pairing approval and automatic/manual sync. Inherited recorder-publication evidence records
+31 iOS tests and an iPhone-architecture Release build at source revision
+`91f54969734317da2bfa2be502f7c7cb77c6e475`. API 6/web 6 tests, typechecks and
+production builds were earlier checks on unchanged TypeScript source in that
+publication stack. This documentation-only follow-up did not rerun them.
+Their provenance and physical limits belong in [TESTING.md](TESTING.md#recorder-publication-validation--2026-10-23-australiasydney).
+
+## Remaining work
+
+| Order | Feature or acceptance gate | Current gap | Completion evidence |
+| --- | --- | --- | --- |
+| 1 | Selectable Offline Map Areas for 5–10 km runs | Existing server-style offline packs are separate from the recorder's fixed bundled Protomaps archive; the Offline maps screen is not reachable. | Select area with margin; retain map resources; cold-launch, pan, zoom and switch appearance offline using that area. Recording remains usable without a server. |
+| 2 | Cache lifecycle | No Protomaps download size/progress, update/delete, quota or eviction flow. | Observable progress/error/retry; interrupted-download recovery; safe update and deletion; resource reuse across drawing layers; retain previous usable map on failure. |
+| 3 | Surface map in web workspace and PDF | Chosen surface style is in the standalone trial and iOS bundle; workspace/PDF still use the older local map pipeline. | Same surface-road semantics, readable labels, Trail Overlays and attribution in workspace and each supported Print Profile/PDF. |
+| Gate | Target-iPhone recording and transfer | Simulator/source proof does not establish outdoor lock/sleep behavior or real laptop transfer. | Ten-minute locked-phone run, pause/resume, Waypoint, interruption recovery, airplane mode and two sync attempts producing one server copy. |
+| Gate | Physical print and LED acceptance | Machine PDF rendering does not prove physical legibility or scale. | A4 portrait/landscape measurements at each Print Scale, greyscale printer review and target blue-light LED review. |
+
+### Next feature slice: connect selected areas to the recorder
+
+Assess Protomaps/MapLibre resource behavior first. The fixed bundled 11 MB Sydney
+map is already offline; selecting bounds inside it alone is not a download feature.
+Do not expose the dormant server-pack controls as completed Protomaps caching.
+
+Choose the smallest end-to-end area flow after verifying its tile source and
+renderer connection. Keep route-corridor selection, broader service-area overview,
+and cache lifecycle as explicit follow-up steps until their acceptance evidence
+exists. No phone deployment, shared-container rebuild or field gate is implied by
+this documentation update.
+
+## Approved MVP delivery scope
+
+The original scope below was approved before implementation. It records intended
+behavior and delivery order, not proof that every acceptance gate has passed.
+Historical machine results live in the validation guide; completed changes live
+in the changelog. The bundled Sydney map is delivered, while selectable route
+caching and workspace/PDF integration above remain open.
 
 ## Outcome
 
@@ -289,4 +308,4 @@ PostgreSQL is chosen over SQLite because the intended next deployment is online.
 
 ## Approval Gate
 
-Approval authorizes implementation in the delivery-phase order above. Before feature work, create one ADR recording the PostgreSQL-over-SQLite decision and complete Phase 0. Any failure that changes the three-part architecture returns for approval rather than silently substituting another stack.
+Original approval covered implementation in the delivery-phase order above. The accepted PostgreSQL decision is recorded in project context; do not create a second ADR for it. Any failure that changes the three-part architecture returns for approval rather than silently substituting another stack.

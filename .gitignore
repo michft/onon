@@ -1,3 +1,9 @@
+# Parallel-task JJ workspaces (docs/WORKTREE.md)
+/.worktrees/
+
+# Local agent session handoffs (AGENTS.md)
+/.plans/
+
 # Downloaded/rebuildable local map assets and generated exports
 .local/
 data/

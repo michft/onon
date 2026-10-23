@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reconcile approved recorder documentation with main, retain consolidated project guidance, and distinguish remaining features from physical acceptance in PLAN.
+
 - Retry recorder refreshes invalidated by concurrent sync, avoiding false storage-failure alerts after Pause, Resume or Finish.
 
 - Complete iOS session recovery before enabling automatic sync, so startup cannot show Recording with capture stopped.
@@ -19,4 +21,4 @@
 - Add a phone-deployable offline Sydney OSM map beneath the iOS recorder's GPS trail, waypoints and controls, with system light/dark styling and larger street labels.
 - Add checksum-pinned native map preparation and preserve the route-sized offline cache TODO.
 - Add a separate locally hosted Sydney Protomaps Light trial with surface roads, distinct walking paths and local map assets.
-- Track route-sized offline tile caching and production map integration in TODO.
+- Track route-sized offline tile caching and production map integration in [PLAN](docs/PLAN.md#remaining-work).
