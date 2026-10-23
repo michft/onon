@@ -19,8 +19,8 @@ Before building the iPhone app, run `pnpm install --frozen-lockfile` and
 [iOS setup guide](apps/ios/README.md), open `apps/ios/Onon.xcodeproj` in Xcode,
 select a personal development team, then install on iPhone.
 
-Product language: [CONTEXT.md](./CONTEXT.md). Approved scope and acceptance
-tests: [PLAN.md](./PLAN.md). Integration boundary:
+Product language: [CONTEXT.md](./docs/CONTEXT.md). Approved scope and acceptance
+tests: [PLAN.md](./docs/PLAN.md). Integration boundary:
 [docs/API_CONTRACT.md](./docs/API_CONTRACT.md). Validation guide:
 [docs/TESTING.md](./docs/TESTING.md).
 
