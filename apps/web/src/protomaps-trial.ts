@@ -2,7 +2,6 @@ import maplibregl, { type CameraOptions } from "maplibre-gl";
 import type { StyleSpecification } from "@maplibre/maplibre-gl-style-spec";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./protomaps-trial.css";
-import { surfaceMapStyle } from "./protomaps-style";
 
 const scenes: Record<string, CameraOptions> = {
   streets: { center: [151.2024, -33.8685], zoom: 17, bearing: 45 },
@@ -14,11 +13,9 @@ const status = document.querySelector<HTMLElement>("#status")!;
 async function start() {
   const response = await fetch("/light.json");
   if (!response.ok) throw new Error(`Local style unavailable (${response.status})`);
-  const baseline: StyleSpecification = await response.json();
-  // MapLibre requires an absolute sprite URL even for a locally fetched style.
-  if (typeof baseline.sprite === "string") baseline.sprite = new URL(baseline.sprite, location.href).href;
+  const style: StyleSpecification = await response.json();
   const map = new maplibregl.Map({
-    container: "map", style: surfaceMapStyle(baseline), ...scenes.streets,
+    container: "map", style, ...scenes.streets,
     maxBounds: [[151.15, -33.92], [151.25, -33.80]], minZoom: 12, maxZoom: 19
   });
   map.addControl(new maplibregl.NavigationControl(), "top-right");
