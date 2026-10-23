@@ -3,6 +3,7 @@ import SwiftUI
 struct PairingView: View {
     @EnvironmentObject private var model: AppModel
     @State private var showScanner = false
+    @State private var scannedPayload: String?
 
     var body: some View {
         NavigationStack {
@@ -23,15 +24,19 @@ struct PairingView: View {
                 Section("Field use") {
                     Label("Raw recordings stay on this iPhone after sync", systemImage: "internaldrive")
                     Label("Always location access enables lock-screen capture", systemImage: "lock.iphone")
-                    Label("Download a detailed area before leaving Wi-Fi", systemImage: "map")
+                    Label("Bundled Sydney map works offline", systemImage: "map")
                 }
             }
             .navigationTitle("Server")
-            .sheet(isPresented: $showScanner) {
+            .sheet(isPresented: $showScanner, onDismiss: {
+                guard let payload = scannedPayload else { return }
+                scannedPayload = nil
+                model.receivePairing(payload: payload)
+            }) {
                 NavigationStack {
                     QRCodeScannerView { payload in
+                        scannedPayload = payload
                         showScanner = false
-                model.receivePairing(payload: payload)
                     }
                     .ignoresSafeArea(edges: .bottom)
                     .navigationTitle("Scan pairing code")

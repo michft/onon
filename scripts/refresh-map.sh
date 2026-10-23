@@ -28,11 +28,7 @@ if [[ -n "$source_pbf" ]]; then
     || die "ONON_SOURCE_PBF must be an existing non-empty file under $MAP_SOURCE_DIR"
   log "using cached OSM input: $source_pbf"
 else
-  latest_source=""
-  for cached_source in "$MAP_SOURCE_DIR"/australia-*.osm.pbf; do
-    [[ -f "$cached_source" ]] || continue
-    if [[ -z "$latest_source" || "$cached_source" -nt "$latest_source" ]]; then latest_source="$cached_source"; fi
-  done
+  latest_source="$(latest_osm_source "$MAP_SOURCE_DIR")"
   if [[ -n "$latest_source" ]] && file_is_fresh "$latest_source"; then
     source_pbf="$latest_source"
     log "using OSM input newer than $REMOTE_DOWNLOAD_MAX_AGE_DAYS days: $source_pbf"

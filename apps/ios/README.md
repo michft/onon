@@ -40,8 +40,9 @@ Long-press the status card on the Record screen to show or hide capture diagnost
 
 ## Configuration
 
-Server pairing is optional. Scan the local server's QR with the iPhone Camera,
-open Onon and review the displayed laptop address. Pairing and automatic uploads
+Server pairing is optional. Use **Server → Scan pairing QR**, or scan the local
+server's QR with the iPhone Camera and open Onon. Review the displayed laptop
+address. Pairing and automatic uploads
 start only after **Pair and enable uploads**. Cancel leaves the current pairing
 unchanged. Payload:
 
