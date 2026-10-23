@@ -473,6 +473,100 @@ final class AppModelTests: XCTestCase {
         await drainTasks()
     }
 
+    func testTransitionsRetryRefreshInvalidatedByConcurrentSync() async throws {
+        enum Transition: CaseIterable { case pause, resume, finish }
+        let previousURL = ServerConfiguration.serverURL
+        let previousApproval = UserDefaults.standard.string(forKey: "approved-pairing-origin")
+        ServerConfiguration.serverURL = nil
+        defer {
+            ServerConfiguration.serverURL = previousURL
+            UserDefaults.standard.set(previousApproval, forKey: "approved-pairing-origin")
+        }
+        for transition in Transition.allCases {
+            let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+            let database = try RecordingDatabase(fileURL: folder.appending(path: "test.sqlite"))
+            _ = try await database.startRecording()
+            var holdTransition = false
+            var holdSync = false
+            var releaseTransition: CheckedContinuation<Void, Never>?
+            var releaseSync: CheckedContinuation<Void, Never>?
+            let transitionRead = expectation(description: "Transition refresh suspended")
+            let syncRead = expectation(description: "Sync refresh suspended")
+            let model = AppModel(database: database, readSummaries: { database in
+                let summaries = try await database.recordings()
+                if holdTransition {
+                    holdTransition = false
+                    transitionRead.fulfill()
+                    await withCheckedContinuation { releaseTransition = $0 }
+                } else if holdSync {
+                    holdSync = false
+                    syncRead.fulfill()
+                    await withCheckedContinuation { releaseSync = $0 }
+                }
+                return summaries
+            }, pairingExchange: { _ in })
+            defer { model.locationRecorder.stopCapture() }
+            await model.prepare()
+            model.receivePairing(payload: "onon://pair?server=http%3A%2F%2Fonon.local%3A3000&code=test")
+            await model.confirmPairing()
+            if transition == .resume { await model.pause() }
+            holdTransition = true
+            let operation = Task {
+                switch transition {
+                case .pause: await model.pause()
+                case .resume: await model.resume()
+                case .finish: await model.finish()
+                }
+            }
+            var sync: Task<Void, Never>?
+            func drainTasks() async {
+                holdTransition = false
+                holdSync = false
+                releaseTransition?.resume()
+                releaseTransition = nil
+                releaseSync?.resume()
+                releaseSync = nil
+                await operation.value
+                await sync?.value
+            }
+            do {
+                await fulfillment(of: [transitionRead], timeout: 5)
+                guard releaseTransition != nil else { throw RecordingError.storage("Transition did not suspend") }
+                holdSync = true
+                sync = Task { await model.syncNow() }
+                await fulfillment(of: [syncRead], timeout: 5)
+                guard releaseSync != nil else { throw RecordingError.storage("Sync did not suspend") }
+                releaseTransition?.resume()
+                releaseTransition = nil
+                await operation.value
+                releaseSync?.resume()
+                releaseSync = nil
+                await sync?.value
+
+                XCTAssertNil(model.captureFailure)
+                XCTAssertNil(model.alertMessage)
+                switch transition {
+                case .pause:
+                    XCTAssertEqual(model.currentRecording?.summary.state, .paused)
+                    XCTAssertFalse(model.locationRecorder.isCapturing)
+                case .resume:
+                    XCTAssertEqual(model.currentRecording?.summary.state, .active)
+                    XCTAssertTrue(model.locationRecorder.isCapturing)
+                case .finish:
+                    XCTAssertNil(model.currentRecording)
+                    XCTAssertFalse(model.finishNeedsRetry)
+                    XCTAssertFalse(model.locationRecorder.isCapturing)
+                }
+            } catch {
+                await drainTasks()
+                throw error
+            }
+            await drainTasks()
+        }
+    }
+
     private func fixture(readSummaries: @escaping @MainActor (RecordingDatabase) async throws -> [RecordingSummary] = { try await $0.recordings() }, readRecording: @escaping @MainActor (RecordingDatabase, UUID) async throws -> RecordingSnapshot? = { try await $0.recording(id: $1) }) async throws -> (AppModel, RecordingDatabase, URL, UUID) {
         let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

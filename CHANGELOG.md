@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Retry recorder refreshes invalidated by concurrent sync, avoiding false storage-failure alerts after Pause, Resume or Finish.
+
 - Complete iOS session recovery before enabling automatic sync, so startup cannot show Recording with capture stopped.
 
 - Restore the optional Server tab and QR scanner; show destination approval after dismissing the scanner. Skip empty cached OSM inputs during map refresh.
