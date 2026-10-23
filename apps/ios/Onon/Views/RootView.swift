@@ -11,6 +11,8 @@ struct RootView: View {
                         .tabItem { Label("Record", systemImage: "location.fill") }
                     RecordingsView()
                         .tabItem { Label("Saved", systemImage: "point.topleft.down.to.point.bottomright.curvepath") }
+                    PairingView()
+                        .tabItem { Label("Server", systemImage: "server.rack") }
                 }
             } else {
                 ProgressView("Opening recordings…")

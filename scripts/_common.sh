@@ -69,6 +69,15 @@ file_is_fresh() {
   (( max_age_seconds > 0 && now - modified < max_age_seconds ))
 }
 
+latest_osm_source() {
+  local directory="$1" cached_source latest_source=""
+  for cached_source in "$directory"/australia-*.osm.pbf; do
+    [[ -f "$cached_source" && -s "$cached_source" ]] || continue
+    if [[ -z "$latest_source" || "$cached_source" -nt "$latest_source" ]]; then latest_source="$cached_source"; fi
+  done
+  printf '%s' "$latest_source"
+}
+
 container_exists() { container list --all --quiet 2>/dev/null | grep -Fxq -- "$1"; }
 container_running() { container list --quiet 2>/dev/null | grep -Fxq -- "$1"; }
 

@@ -27,6 +27,8 @@ final class AppModel: ObservableObject {
     private var periodicSync: Task<Void, Never>?
     private var isFinishing = false
     private var captureIntent = UUID()
+    // A completed storage mutation invalidates snapshots fetched before it.
+    private var recordingRevision = UUID()
     private let readSummaries: @MainActor (RecordingDatabase) async throws -> [RecordingSummary]
     private let readRecording: @MainActor (RecordingDatabase, UUID) async throws -> RecordingSnapshot?
     private let pairingExchange: @MainActor (PairingQRCode) async throws -> Void
@@ -94,6 +96,7 @@ final class AppModel: ObservableObject {
         }
         do {
             let id = try await database.startRecording()
+            recordingRevision = UUID()
             Log.recording.notice("Started recording \(id, privacy: .public)")
             currentRecording = try await database.recording(id: id)
             captureFailure = nil
@@ -108,10 +111,16 @@ final class AppModel: ObservableObject {
         captureIntent = intent
         do {
             try await database.setState(recordingID: currentRecording.summary.id, from: .active, to: .paused)
+            recordingRevision = UUID()
             guard intent == captureIntent else { return }
             Log.recording.notice("Paused recording \(currentRecording.summary.id, privacy: .public)")
             locationRecorder.stopCapture()
             try await reload()
+            guard intent == captureIntent else { return }
+            guard self.currentRecording?.summary.id == currentRecording.summary.id,
+                  self.currentRecording?.summary.state == .paused else {
+                throw RecordingError.storage("Paused recording could not be refreshed")
+            }
         } catch {
             guard intent == captureIntent else { return }
             captureFailure = error.localizedDescription
@@ -132,6 +141,7 @@ final class AppModel: ObservableObject {
             switch persisted.summary.state {
             case .paused:
                 try await database.setState(recordingID: persisted.summary.id, from: .paused, to: .active)
+                recordingRevision = UUID()
             case .active:
                 break // A previous Resume may have committed before its reload failed.
             case .finished:
@@ -173,8 +183,13 @@ final class AppModel: ObservableObject {
                     from: persisted.summary.state,
                     to: .finished
                 )
+                recordingRevision = UUID()
             }
             try await reload()
+            guard self.currentRecording?.summary.id != recordingID,
+                  recordings.contains(where: { $0.id == recordingID && $0.state == .finished }) else {
+                throw RecordingError.storage("Finished recording could not be refreshed")
+            }
             captureFailure = nil
             finishingRecordingID = nil
             Log.recording.notice("Finished recording \(persisted.summary.id, privacy: .public) with \(persisted.summary.sampleCount) samples, \(persisted.summary.waypointCount) waypoints")
@@ -202,6 +217,7 @@ final class AppModel: ObservableObject {
         }
         do {
             try await database.appendWaypoint(recordingID: currentRecording.summary.id, waypoint: WaypointObservation(location: location))
+            recordingRevision = UUID()
             Log.recording.notice("Added waypoint to \(currentRecording.summary.id, privacy: .public) at ±\(location.horizontalAccuracy, format: .fixed(precision: 0))m")
             try await reload()
         } catch { alertMessage = error.localizedDescription }
@@ -244,6 +260,7 @@ final class AppModel: ObservableObject {
         guard let syncService, isPaired, !isSyncing, !isPairing, pendingPairing == nil else { return }
         isSyncing = true
         await syncService.syncPending()
+        recordingRevision = UUID()
         do { try await reload() } catch { Log.storage.error("Reload after sync failed: \(error.localizedDescription, privacy: .public)") }
         isSyncing = false
     }
@@ -278,16 +295,21 @@ final class AppModel: ObservableObject {
     func commit(_ location: CLLocation) async {
         guard captureFailure == nil, let database, let snapshot = currentRecording, snapshot.summary.state == .active else { return }
         let recordingID = snapshot.summary.id
+        let intent = captureIntent
         do {
             let sample = try await database.appendSample(
                 recordingID: recordingID,
                 locationSample: RawSample(sequence: snapshot.summary.sampleCount, location: location)
             )
+            recordingRevision = UUID()
             // State may have moved on while awaiting storage; append only when this is the next sample.
             if let current = currentRecording, current.summary.id == recordingID, current.summary.sampleCount == sample.id {
                 currentRecording = current.appending(sample)
             } else if currentRecording?.summary.id == recordingID {
-                currentRecording = try await database.recording(id: recordingID)
+                let revision = recordingRevision
+                let refreshed = try await database.recording(id: recordingID)
+                guard revision == recordingRevision, currentRecording?.summary.id == recordingID else { return }
+                currentRecording = refreshed
             }
             // Keep the Saved tab's counts current without re-querying every recording.
             if let summary = currentRecording?.summary, let index = recordings.firstIndex(where: { $0.id == summary.id }) {
@@ -298,14 +320,17 @@ final class AppModel: ObservableObject {
             Log.storage.debug("Dropped a fix that raced a pause or finish")
         } catch {
             Log.storage.fault("Sample save failed for \(recordingID, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            guard intent == captureIntent, !finishNeedsRetry else { return }
             captureFailure = error.localizedDescription
             locationRecorder.stopCapture()
             do {
                 try await database.setState(recordingID: recordingID, from: .active, to: .paused)
+                recordingRevision = UUID()
                 try await reload()
             } catch {
                 Log.storage.fault("Could not pause after sample save failure: \(error.localizedDescription, privacy: .public)")
             }
+            guard intent == captureIntent, !finishNeedsRetry else { return }
             alertMessage = "Capture stopped to protect data: \(error.localizedDescription) Tap Resume to try again."
         }
     }
@@ -313,6 +338,7 @@ final class AppModel: ObservableObject {
     func reload() async throws {
         guard let database else { return }
         let intent = captureIntent
+        let revision = recordingRevision
         let summaries = try await readSummaries(database)
         let unfinished = summaries.first { $0.state != .finished }
         let snapshot: RecordingSnapshot?
@@ -321,7 +347,7 @@ final class AppModel: ObservableObject {
         } else {
             snapshot = nil
         }
-        guard intent == captureIntent else { return }
+        guard intent == captureIntent, revision == recordingRevision else { return }
         recordings = summaries
         currentRecording = snapshot
     }

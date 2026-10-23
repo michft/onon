@@ -71,14 +71,14 @@ final class AppModelTests: XCTestCase {
 
     func testResumeRetriesWhenTransitionSucceedsButReadFails() async throws {
         var failActiveRead = false
-        let (model, database, _, id) = try await fixture { database, id in
+        let (model, database, _, id) = try await fixture(readRecording: { database, id in
             let snapshot = try await database.recording(id: id)
             if failActiveRead && snapshot?.summary.state == .active {
                 failActiveRead = false
                 throw RecordingError.storage("test read failure")
             }
             return snapshot
-        }
+        })
         defer { model.locationRecorder.stopCapture() }
         await model.pause()
         failActiveRead = true
@@ -101,13 +101,13 @@ final class AppModelTests: XCTestCase {
 
     func testResumeReconcilesPauseWhenRecoveryReadFails() async throws {
         var failNextRead = false
-        let (model, database, file, id) = try await fixture { database, id in
+        let (model, database, file, id) = try await fixture(readRecording: { database, id in
             if failNextRead {
                 failNextRead = false
                 throw RecordingError.storage("test read failure")
             }
             return try await database.recording(id: id)
-        }
+        })
         defer { model.locationRecorder.stopCapture() }
         try execute("CREATE TRIGGER fail_test_sample BEFORE INSERT ON samples BEGIN SELECT RAISE(ABORT, 'test write failure'); END", at: file)
         failNextRead = true
@@ -131,13 +131,13 @@ final class AppModelTests: XCTestCase {
 
     func testPauseReadFailureExposesStoppedCaptureAndResumeWorks() async throws {
         var failNextRead = false
-        let (model, database, _, id) = try await fixture { database, id in
+        let (model, database, _, id) = try await fixture(readRecording: { database, id in
             if failNextRead {
                 failNextRead = false
                 throw RecordingError.storage("test pause read failure")
             }
             return try await database.recording(id: id)
-        }
+        })
         defer { model.locationRecorder.stopCapture() }
         failNextRead = true
 
@@ -235,45 +235,165 @@ final class AppModelTests: XCTestCase {
             await model.pause()
             suspendNextRead = true
             let resume = Task { await model.resume() }
-            await fulfillment(of: [suspended], timeout: 5)
-            guard let release = releaseReload else {
-                XCTFail("Resume did not suspend in reload")
-                return
+            func drainResume() async {
+                suspendNextRead = false
+                releaseReload?.resume()
+                releaseReload = nil
+                await resume.value
             }
+            do {
+                await fulfillment(of: [suspended], timeout: 5)
+                guard releaseReload != nil else {
+                    throw RecordingError.storage("Resume did not suspend in reload")
+                }
 
-            if interruption == .failedFinish {
-                try execute("CREATE TRIGGER fail_test_finish BEFORE UPDATE OF state ON recordings WHEN NEW.state='finished' BEGIN SELECT RAISE(ABORT, 'test finish write failure'); END", at: file)
-            }
-            if interruption == .pause {
-                await model.pause()
-            } else {
-                await model.finish()
-            }
-            let failure = model.captureFailure
-            release.resume()
-            releaseReload = nil
-            await resume.value
+                if interruption == .failedFinish {
+                    try execute("CREATE TRIGGER fail_test_finish BEFORE UPDATE OF state ON recordings WHEN NEW.state='finished' BEGIN SELECT RAISE(ABORT, 'test finish write failure'); END", at: file)
+                }
+                if interruption == .pause {
+                    await model.pause()
+                } else {
+                    await model.finish()
+                }
+                let failure = model.captureFailure
+                await drainResume()
 
-            XCTAssertFalse(model.locationRecorder.isCapturing)
-            XCTAssertEqual(model.captureFailure, failure)
-            switch interruption {
-            case .pause:
-                XCTAssertNil(model.captureFailure)
-                XCTAssertEqual(model.currentRecording?.summary.state, .paused)
-            case .finish:
-                XCTAssertNil(model.captureFailure)
-                XCTAssertNil(model.currentRecording)
-            case .failedFinish:
-                XCTAssertNotNil(model.captureFailure)
-                XCTAssertTrue(model.finishNeedsRetry)
-                await model.commit(fix())
-                let persisted = try await database.recording(id: id)
-                XCTAssertEqual(persisted?.summary.sampleCount, 0)
-                try execute("DROP TRIGGER fail_test_finish", at: file)
-                await model.finish()
-                XCTAssertNil(model.currentRecording)
+                XCTAssertFalse(model.locationRecorder.isCapturing)
+                XCTAssertEqual(model.captureFailure, failure)
+                switch interruption {
+                case .pause:
+                    XCTAssertNil(model.captureFailure)
+                    XCTAssertEqual(model.currentRecording?.summary.state, .paused)
+                case .finish:
+                    XCTAssertNil(model.captureFailure)
+                    XCTAssertNil(model.currentRecording)
+                case .failedFinish:
+                    XCTAssertNotNil(model.captureFailure)
+                    XCTAssertTrue(model.finishNeedsRetry)
+                    await model.commit(fix())
+                    let persisted = try await database.recording(id: id)
+                    XCTAssertEqual(persisted?.summary.sampleCount, 0)
+                    try execute("DROP TRIGGER fail_test_finish", at: file)
+                    await model.finish()
+                    XCTAssertNil(model.currentRecording)
+                }
+            } catch {
+                await drainResume()
+                throw error
             }
         }
+    }
+
+    func testBackgroundReloadCannotRestorePausedStateAfterResume() async throws {
+        var holdResume = false
+        var holdBackground = false
+        var releaseResume: CheckedContinuation<Void, Never>?
+        var releaseBackground: CheckedContinuation<Void, Never>?
+        let resumeRead = expectation(description: "Resume read paused state")
+        let backgroundRead = expectation(description: "Background read paused snapshot")
+        let (model, _, _, _) = try await fixture(readRecording: { database, id in
+            let snapshot = try await database.recording(id: id)
+            if holdResume {
+                holdResume = false
+                resumeRead.fulfill()
+                await withCheckedContinuation { releaseResume = $0 }
+            } else if holdBackground {
+                holdBackground = false
+                backgroundRead.fulfill()
+                await withCheckedContinuation { releaseBackground = $0 }
+            }
+            return snapshot
+        })
+        defer { model.locationRecorder.stopCapture() }
+        await model.pause()
+        holdResume = true
+        let resume = Task { await model.resume() }
+        var background: Task<Void, Error>?
+        func drainTasks() async {
+            holdResume = false
+            holdBackground = false
+            releaseResume?.resume()
+            releaseResume = nil
+            releaseBackground?.resume()
+            releaseBackground = nil
+            await resume.value
+            _ = try? await background?.value
+        }
+        do {
+            await fulfillment(of: [resumeRead], timeout: 5)
+            guard releaseResume != nil else { throw RecordingError.storage("Resume read did not suspend") }
+            holdBackground = true
+            background = Task { try await model.reload() }
+            await fulfillment(of: [backgroundRead], timeout: 5)
+            guard releaseBackground != nil else { throw RecordingError.storage("Background read did not suspend") }
+            releaseResume?.resume()
+            releaseResume = nil
+            await resume.value
+            XCTAssertTrue(model.locationRecorder.isCapturing)
+            XCTAssertEqual(model.currentRecording?.summary.state, .active)
+            releaseBackground?.resume()
+            releaseBackground = nil
+            try await background?.value
+
+            XCTAssertTrue(model.locationRecorder.isCapturing)
+            XCTAssertEqual(model.currentRecording?.summary.state, .active)
+            await model.commit(fix())
+            XCTAssertEqual(model.currentRecording?.summary.sampleCount, 1)
+        } catch {
+            await drainTasks()
+            throw error
+        }
+        await drainTasks()
+    }
+
+    func testSupersededSampleRecoveryPreservesFinishRetryAlert() async throws {
+        var holdRecovery = false
+        var releaseRecovery: CheckedContinuation<Void, Never>?
+        let recoveryRead = expectation(description: "Sample recovery reload suspended")
+        let (model, database, file, id) = try await fixture(readSummaries: { database in
+            let summaries = try await database.recordings()
+            if holdRecovery {
+                holdRecovery = false
+                recoveryRead.fulfill()
+                await withCheckedContinuation { releaseRecovery = $0 }
+            }
+            return summaries
+        })
+        defer { model.locationRecorder.stopCapture() }
+        try execute("""
+            CREATE TRIGGER fail_test_sample BEFORE INSERT ON samples BEGIN SELECT RAISE(ABORT, 'test sample write failure'); END;
+            CREATE TRIGGER fail_test_finish BEFORE UPDATE OF state ON recordings WHEN NEW.state='finished'
+            BEGIN SELECT RAISE(ABORT, 'test finish write failure'); END;
+            """, at: file)
+        holdRecovery = true
+        let recovery = Task { await model.commit(fix()) }
+        func drainRecovery() async {
+            holdRecovery = false
+            releaseRecovery?.resume()
+            releaseRecovery = nil
+            await recovery.value
+        }
+        do {
+            await fulfillment(of: [recoveryRead], timeout: 5)
+            guard releaseRecovery != nil else { throw RecordingError.storage("Recovery read did not suspend") }
+            await model.finish()
+            let finishAlert = model.alertMessage
+            XCTAssertTrue(finishAlert?.contains("Tap Retry finish") == true)
+            await drainRecovery()
+
+            XCTAssertEqual(model.alertMessage, finishAlert)
+            XCTAssertTrue(model.finishNeedsRetry)
+            XCTAssertFalse(model.locationRecorder.isCapturing)
+            let persisted = try await database.recording(id: id)
+            XCTAssertEqual(persisted?.summary.sampleCount, 0)
+            try execute("DROP TRIGGER fail_test_sample; DROP TRIGGER fail_test_finish", at: file)
+            await model.finish()
+            XCTAssertNil(model.currentRecording)
+        } catch {
+            await drainRecovery()
+            throw error
+        }
+        await drainRecovery()
     }
 
     private func fixture(readSummaries: @escaping @MainActor (RecordingDatabase) async throws -> [RecordingSummary] = { try await $0.recordings() }, readRecording: @escaping @MainActor (RecordingDatabase, UUID) async throws -> RecordingSnapshot? = { try await $0.recording(id: $1) }) async throws -> (AppModel, RecordingDatabase, URL, UUID) {
