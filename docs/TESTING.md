@@ -5,15 +5,15 @@
 - `pnpm typecheck` and `pnpm test` passed: API 6 tests, web 6 tests.
 - API TypeScript and web production builds passed. Vite reports its existing
   large-chunk advisory.
-- iOS simulator build and all 30 unit tests passed on iPhone 17 Pro Max,
+- iOS simulator build and all 31 unit tests passed on iPhone 17 Pro Max,
   iOS 26.5. Regression coverage includes pause/finish races, sample and pause
   write failures, successful Pause/Resume/Finish transitions followed by read failures,
   stopped Finish retry after write failure or a concurrent refresh,
   suspended Resume superseded by Pause or successful/failed Finish,
   background refresh ordering, superseded sample-recovery alerts, and startup
-  recovery protected from early sync,
+  recovery protected from early sync, transition refresh retried after concurrent sync,
   explicit pairing approval, local-origin restrictions, and redirect rejection.
-- Nine recovery regressions failed before their corresponding fixes, then
+- Ten recovery regressions failed before their corresponding fixes, then
   passed after reconciling persisted state, ordering refresh publication and
   retaining explicit Finish retry identity.
 - iOS Release build for generic physical iPhone architecture passed with code

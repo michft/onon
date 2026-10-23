@@ -338,17 +338,22 @@ final class AppModel: ObservableObject {
     func reload() async throws {
         guard let database else { return }
         let intent = captureIntent
-        let revision = recordingRevision
-        let summaries = try await readSummaries(database)
-        let unfinished = summaries.first { $0.state != .finished }
-        let snapshot: RecordingSnapshot?
-        if let unfinished {
-            snapshot = try await readRecording(database, unfinished.id)
-        } else {
-            snapshot = nil
+        for _ in 0..<5 {
+            let revision = recordingRevision
+            let summaries = try await readSummaries(database)
+            let unfinished = summaries.first { $0.state != .finished }
+            let snapshot: RecordingSnapshot?
+            if let unfinished {
+                snapshot = try await readRecording(database, unfinished.id)
+            } else {
+                snapshot = nil
+            }
+            guard intent == captureIntent else { return }
+            guard revision == recordingRevision else { continue }
+            recordings = summaries
+            currentRecording = snapshot
+            return
         }
-        guard intent == captureIntent, revision == recordingRevision else { return }
-        recordings = summaries
-        currentRecording = snapshot
+        throw RecordingError.storage("Recording changed repeatedly during refresh")
     }
 }
