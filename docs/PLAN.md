@@ -28,15 +28,21 @@ Their provenance and physical limits belong in [TESTING.md](TESTING.md#recorder-
 
 ### Next feature slice: connect selected areas to the recorder
 
-Assess Protomaps/MapLibre resource behavior first. The fixed bundled 11 MB Sydney
-map is already offline; selecting bounds inside it alone is not a download feature.
-Do not expose the dormant server-pack controls as completed Protomaps caching.
+HTTP source prerequisite is implemented: the trial now publishes filtered
+Light/Dark styles and HTTP TileJSON/ZXY resources through one origin, with
+loopback default and explicit trusted-LAN opt-in. Adapter tests and an isolated
+real-PMTiles loopback check pass. Existing bounds and source zooms are unchanged;
+this does not expand the downloaded Sydney region.
 
-Choose the smallest end-to-end area flow after verifying its tile source and
-renderer connection. Keep route-corridor selection, broader service-area overview,
-and cache lifecycle as explicit follow-up steps until their acceptance evidence
-exists. No phone deployment, shared-container rebuild or field gate is implied by
-this documentation update.
+Next, connect native selected-area downloads to those exact HTTP styles and the
+recorder. Verify resource retention, cold launch, pan/zoom and appearance changes
+with the laptop unreachable. The fixed bundled 11 MB map is already offline;
+selecting bounds inside it alone is not a download feature. Do not expose dormant
+server-pack controls as completed Protomaps caching.
+
+Route-corridor selection, broader service-area overview, updates/deletion and
+quota/eviction remain incomplete. Native download/airplane-mode and physical field
+gates are open; HTTP source tests do not close them.
 
 ## Approved MVP delivery scope
 

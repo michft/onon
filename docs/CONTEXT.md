@@ -440,7 +440,7 @@ Use PostgreSQL instead of SQLite even though SQLite would simplify the single-us
 
 ## Protomaps surface-map trial
 
-This separate, zoomable Sydney map trials Protomaps Light with surface roads and walking paths. It does not replace the workspace map, iOS offline packs or PDF renderer.
+This separate, zoomable Sydney map publishes Protomaps Light/Dark styles with surface roads and walking paths. It does not replace the workspace map, iOS offline packs or PDF renderer.
 
 ### Run
 
@@ -451,9 +451,41 @@ bash scripts/download-protomaps-trial.sh
 bash scripts/start-protomaps-trial.sh
 ```
 
-Open <http://127.0.0.1:8083/protomaps.html>. Stop with Ctrl-C. Both servers bind only to loopback; tiles use port 8082 and the viewer uses 8083. The starter builds the viewer with existing Vite/MapLibre dependencies and serves static assets with Python 3. Set an absolute `ONON_DATA_ROOT` to store the trial elsewhere.
+Open <http://127.0.0.1:8083/protomaps.html>. Stop with Ctrl-C. The starter uses
+Node.js 24, pnpm/Vite and the retained PMTiles CLI; it never downloads at startup.
+The public HTTP adapter defaults to loopback port 8083; PMTiles stays private on
+loopback port 8082. Styles, TileJSON, vector tiles, glyphs, sprites and the viewer
+share the public origin. `/light.json` and `/dark.json` already contain surface
+filters and absolute resource URLs, so native HTTP clients need no browser patch.
+Both use `/sydney.json` and `/sydney/{z}/{x}/{y}.mvt` for shared tile resources.
 
-Downloads live in ignored `.local/onon/protomaps-trial/`. After downloading and installing dependencies, startup/rendering needs no external network: tiles, English glyphs, icons, style and viewer assets are local. This is **host-local rendering**, not a browser/device offline tile cache. A phone still needs an integrated source and its own cached assets; selectable route caching remains future work.
+For a phone on a trusted LAN, explicitly supply both bind and advertised host:
+
+```sh
+ONON_PROTOMAPS_BIND_ADDRESS=0.0.0.0 \
+ONON_PROTOMAPS_PUBLIC_HOST=192.168.1.20 \
+bash scripts/start-protomaps-trial.sh
+```
+
+Replace the example IP with the Mac's private IPv4 address, then open
+`http://<that-address>:8083/protomaps.html` on the phone. A resolvable `.local`
+hostname is also accepted. No public-internet serving is supported. Do not start
+this alongside another service on its ports. Override `ONON_PROTOMAPS_PORT` and
+`ONON_PROTOMAPS_TILE_PORT` when separate local instances need distinct ports.
+
+Downloads remain in ignored `.local/onon/protomaps-trial/`. Set absolute
+`ONON_DATA_ROOT` for workspace-local generated output; set
+`ONON_PROTOMAPS_TRIAL_DIR` independently to reuse a retained cache read-only.
+Output is `<ONON_DATA_ROOT>/protomaps-trial/site`. Filesystem aliases overlapping
+retained archives, tools, assets or provenance are rejected before Vite can clear
+its output. Output must resolve to its configured destination; aliases to the
+filesystem root or unrelated directories are rejected too. Only allowlisted published resources and Sydney vector tiles are
+served; raw archives and source/private folders are unavailable.
+
+After explicit preparation and dependency installation, startup/rendering needs
+no external map service. This is **host-local rendering**, not a browser/device
+offline tile cache. Phone access to this HTTP source still requires a reachable
+laptop. Native selected-area downloads and recorder integration remain planned.
 
 ### Data and appearance
 
