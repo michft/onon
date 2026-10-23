@@ -478,7 +478,8 @@ Downloads remain in ignored `.local/onon/protomaps-trial/`. Set absolute
 `ONON_PROTOMAPS_TRIAL_DIR` independently to reuse a retained cache read-only.
 Output is `<ONON_DATA_ROOT>/protomaps-trial/site`. Filesystem aliases overlapping
 retained archives, tools, assets or provenance are rejected before Vite can clear
-its output. Only allowlisted published resources and Sydney vector tiles are
+its output. Output must resolve to its configured destination; aliases to the
+filesystem root or unrelated directories are rejected too. Only allowlisted published resources and Sydney vector tiles are
 served; raw archives and source/private folders are unavailable.
 
 After explicit preparation and dependency installation, startup/rendering needs

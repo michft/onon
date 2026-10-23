@@ -258,6 +258,10 @@ one PR per finding by default.
 
 Code revision `cbb9c71a1c93993b1f0b1e4c862134eb3cffb733` adds HTTP serving and
 canonical output/cache separation above implementation `f9e3d191`.
+Follow-up source `21aa697339604cac65ec7437cac1461dced451b0` rejects root and
+unrelated-directory output aliases. Configuration-only regressions failed before
+this fix; six adapter tests, strict script types and shell syntax passed afterward.
+The HTTP/rendering paths are unchanged from the runtime/browser evidence below.
 
 - Six HTTP adapter tests passed using temporary copies of real retained assets;
   the output-symlink regression failed before its fix, then passed.
@@ -285,7 +289,7 @@ node --test scripts/protomaps-http.test.mts
 ```
 
 The six adapter tests cover explicit LAN configuration, canonical cache/output
-separation, retained-file preservation on symlink rejection, filtered Light/Dark
+separation, root/unrelated output rejection, retained-file preservation, filtered Light/Dark
 styles, shared HTTP resource URLs, route isolation and compressed upstream tiles.
 Fixtures use temporary copies and ephemeral loopback servers, never a live cache
 or shared service. Production startup itself does not fetch missing assets.
