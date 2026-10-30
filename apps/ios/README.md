@@ -19,9 +19,9 @@ The recorder renders a bundled Protomaps OSM base map through MapLibre Native. R
 
 Surface roads retain actual carriageway geometry. Tunnels, ferry routes, railways and adjacent cycleways are excluded from road drawing; walking paths use thin dashed lines. This presentation does not edit OSM data.
 
-The packaged Sydney extract covers longitude 151.15–151.25 and latitude -33.92–-33.80, with source zooms 0–15 and display overzoom through 19. Archive: 8.7 MB; complete map resources: about 11 MB. Map tiles, style, fonts and sprites load from bundle file URLs: no pairing, tile server, localhost service, API key or map network request is needed. The pinned source build is 2026-10-09; preserve the downloaded archive because dated upstream builds have limited retention. Bundled glyphs support the trial's English labels; broad multilingual coverage is not included.
+The packaged `onon-regions.pmtiles` archive holds two areas, with source zooms 0–15 and display overzoom through 19. Sydney: longitude 150.65–151.34, latitude -34.06 to -33.67 (Penrith to the sea, Hornsby to Sutherland). Melbourne: longitude 144.80–145.16, latitude -37.96 to -37.58 (Airport to Monash Clayton, north of South Morang to below Clayton). Archive: 97 MB; complete map resources: about 98 MB. The recorder opens at the phone's last known location, or Sydney without one. Map tiles, style, fonts and sprites load from bundle file URLs: no pairing, tile server, localhost service, API key or map network request is needed. The pinned source build is 2026-10-30; preserve the downloaded archive because dated upstream builds have limited retention. Bundled glyphs support the trial's English labels; broad multilingual coverage is not included.
 
-Selected-area/route-corridor downloads and map updates remain in [PLAN](../../docs/PLAN.md#remaining-work). Outside this bundled Sydney region, detailed offline coverage is not guaranteed. Test cold launch, zoom, pan and appearance changes in airplane mode before an outdoor run.
+Selected-area/route-corridor downloads and map updates remain in [PLAN](../../docs/PLAN.md#remaining-work). Outside these bundled regions, detailed offline coverage is not guaranteed. Test cold launch, zoom, pan and appearance changes in airplane mode before an outdoor run.
 
 ## Map verification
 

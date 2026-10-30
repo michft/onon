@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Bundle Sydney and Melbourne in the iPhone app as one offline PMTiles archive (97 MB, source build `20261030`). Sydney now spans Penrith to the sea and Hornsby to Sutherland; Melbourne spans the Airport to Monash Clayton and north of South Morang to below Clayton, including La Trobe. The recorder opens at the last known location.
+
 - Add checksum-pinned Melbourne CBD/inner-suburb vector tiles and local Light/Dark rendering with street names, Yarra River and Botanic Gardens scenes. Keep Sydney available and native Sydney preparation unchanged.
 
 - Publish retained Protomaps Light/Dark surface styles and HTTP vector tiles through one origin, with explicit trusted-LAN opt-in and cache/output alias protection; keep loopback default.

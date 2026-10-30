@@ -111,6 +111,27 @@ remaining browser, native, device, or physical acceptance gaps. Record a
 before/after result for a fix. Do not claim a build, install, launch, passing
 test, or merge-ready PR without the corresponding evidence.
 
+## Two-city iPhone bundle — 2026-10-31 (Australia/Melbourne)
+
+Expands Sydney (Penrith–sea, Hornsby–Sutherland) and Melbourne (Airport–Monash
+Clayton, north of South Morang–below Clayton) and bundles both in the app.
+
+- Extracted from Protomaps `20261030.pmtiles` (the `20261009` Sydney source is
+  no longer published): Sydney 52,256,970 bytes, Melbourne 44,876,980 bytes,
+  combined `onon-regions.pmtiles` 96,909,656 bytes (5,713 tiles, MultiPolygon
+  region). All three SHA-256 pins match; PMTiles verification passed. Cached
+  `scripts/prepare-ios-map.sh` and Melbourne download reran without extracting.
+- Web/API typecheck, lint and tests (12), shell syntax and eight HTTP adapter
+  tests passed after updating their pinned bounds.
+- 32 iOS simulator tests passed, including a new header check that the bundled
+  archive covers both city centres.
+- Simulator (iPhone 18 Pro, iOS 27.0) with simulated locations rendered
+  Melbourne CBD, Penrith and South Morang from the bundle, opening at the
+  last known location.
+- Signed Release build, strict signature check and install on deadbeef7
+  (iPhone 17 Pro, iOS 27.0.1) passed; the device query confirmed the install.
+  Physical launch, airplane mode and outdoor use remain unverified.
+
 ## Melbourne map validation — 2026-10-31 (Australia/Melbourne)
 
 Source revision `dbd356d4937e794540d8ae4e3469ba2f390d432c` adds Melbourne

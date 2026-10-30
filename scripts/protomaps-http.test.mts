@@ -227,7 +227,7 @@ test("HTTP route isolation, absolute TileJSON, published resources, raw compress
     const json = await get(origin, "/sydney.json");
     assert.equal(json.status, 200);
     assert.deepEqual(JSON.parse(json.body.toString()), { tilejson: "3.0.0", name: "Retained Sydney Protomaps trial", scheme: "xyz",
-      tiles: [`${config.origin}/sydney/{z}/{x}/{y}.mvt`], bounds: [151.15, -33.92, 151.25, -33.8], minzoom: 0, maxzoom: 15,
+      tiles: [`${config.origin}/sydney/{z}/{x}/{y}.mvt`], bounds: [150.65, -34.06, 151.34, -33.67], minzoom: 0, maxzoom: 15,
       attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a> | Protomaps' });
     const resources = ["/", "/protomaps.html", "/assets/protomaps-test.js", "/light.json", "/dark.json", "/basemaps-LICENSE.md"];
     for (const flavor of ["light", "dark"]) for (const suffix of [".json", ".png", "@2x.json", "@2x.png"]) {
@@ -298,7 +298,7 @@ test("Melbourne styles and TileJSON select Melbourne tiles and reject Sydney rou
     assert.equal(json.status, 200);
     const metadata = JSON.parse(json.body.toString());
     assert.match(metadata.name, /Melbourne/);
-    assert.deepEqual(metadata.bounds, [144.85, -37.95, 145.10, -37.70]);
+    assert.deepEqual(metadata.bounds, [144.80, -37.96, 145.16, -37.58]);
     assert.deepEqual(metadata.tiles, [`${config.origin}/melbourne/{z}/{x}/{y}.mvt`]);
     assert.equal(metadata.maxzoom, 15);
     for (const flavor of ["light", "dark"]) {

@@ -33,7 +33,7 @@ struct RecordingView: View {
                     ContentUnavailableView(
                         "Offline map unavailable",
                         systemImage: "map",
-                        description: Text("This build could not load its Sydney map. Recording remains available.")
+                        description: Text("This build could not load its offline map. Recording remains available.")
                     )
                 }
             }

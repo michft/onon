@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { createContext, runInContext } from "node:vm";
+import { nativeBundle } from "../apps/web/src/protomaps-regions.ts";
 import { surfaceMapStyle } from "../apps/web/src/protomaps-style.ts";
 type StyleSpecification = Parameters<typeof surfaceMapStyle>[0];
 const { validateStyleMin } = createRequire(new URL("../apps/web/package.json", import.meta.url))(
@@ -23,7 +24,7 @@ const context = createContext({}) as ReturnType<typeof createContext> & {
   };
 };
 runInContext(readFileSync(resolve(trial, "assets/vendor/basemaps.js"), "utf8"), context);
-cpSync(resolve(trial, "sydney.pmtiles"), `${staging}/sydney.pmtiles`);
+cpSync(resolve(trial, nativeBundle.file), `${staging}/${nativeBundle.file}`);
 for (const font of ["Noto Sans Regular", "Noto Sans Italic", "Noto Sans Medium"]) {
   cpSync(resolve(trial, "assets/fonts", font), `${staging}/fonts/${font}`, { recursive: true });
 }
@@ -37,7 +38,7 @@ for (const flavor of ["light", "dark"] as const) {
     sources: {
       protomaps: {
         type: "vector",
-        url: "pmtiles://__MAP_ROOT__/sydney.pmtiles",
+        url: `pmtiles://__MAP_ROOT__/${nativeBundle.file}`,
         attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a> | Protomaps',
       },
     },
@@ -61,7 +62,7 @@ for (const flavor of ["light", "dark"] as const) {
     cpSync(resolve(trial, `assets/sprites/v4/${flavor}${suffix}`), `${staging}/sprites/v4/${flavor}${suffix}`);
   }
 }
-writeFileSync(`${staging}/provenance.json`, readFileSync(resolve(trial, "provenance/extract-metadata.json")));
+writeFileSync(`${staging}/provenance.json`, readFileSync(resolve(trial, "provenance/bundle-metadata.json")));
 rmSync(output, { recursive: true, force: true });
 renameSync(staging, output);
-console.log(`Bundled offline Sydney map prepared: ${output}`);
+console.log(`Bundled offline ${nativeBundle.regions.map((region) => region.name).join(" and ")} map prepared: ${output}`);

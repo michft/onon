@@ -1,3 +1,4 @@
+import CoreLocation
 import MapLibre
 import SwiftUI
 import UIKit
@@ -18,7 +19,9 @@ struct MapCanvas: UIViewRepresentable {
         map.logoView.isHidden = false
         map.attributionButton.isHidden = false
         map.maximumZoomLevel = 19
-        map.setCenter(CLLocationCoordinate2D(latitude: -33.8685, longitude: 151.2024), zoomLevel: initialZoomLevel, animated: false)
+        // Opens on the last known fix so Melbourne users do not start in Sydney.
+        let start = CLLocationManager().location?.coordinate ?? CLLocationCoordinate2D(latitude: -33.8685, longitude: 151.2024)
+        map.setCenter(start, zoomLevel: initialZoomLevel, animated: false)
         return map
     }
 

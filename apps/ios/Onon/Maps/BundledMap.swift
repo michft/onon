@@ -1,6 +1,8 @@
 import Foundation
 
 enum BundledMap {
+    /// One archive holds every bundled region (Sydney and Melbourne).
+    static let archiveName = "onon-regions.pmtiles"
     @MainActor private static var resolvedStyleURLs: [Bool: URL?] = [:]
 
     /// Resolves each flavor once per launch; views call this on every render.
@@ -18,8 +20,8 @@ enum BundledMap {
         }
         let flavor = dark ? "dark" : "light"
         let files = FileManager.default
-        guard files.fileExists(atPath: resources.appending(path: "sydney.pmtiles").path) else {
-            Log.map.fault("Bundled map archive sydney.pmtiles is missing")
+        guard files.fileExists(atPath: resources.appending(path: archiveName).path) else {
+            Log.map.fault("Bundled map archive \(archiveName, privacy: .public) is missing")
             return nil
         }
         do {
