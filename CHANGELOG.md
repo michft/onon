@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add checksum-pinned Melbourne CBD/inner-suburb vector tiles and local Light/Dark rendering with street names, Yarra River and Botanic Gardens scenes. Keep Sydney available and native Sydney preparation unchanged.
+
 - Publish retained Protomaps Light/Dark surface styles and HTTP vector tiles through one origin, with explicit trusted-LAN opt-in and cache/output alias protection; keep loopback default.
 
 - Reconcile approved recorder documentation with main, retain consolidated project guidance, and distinguish remaining features from physical acceptance in PLAN.

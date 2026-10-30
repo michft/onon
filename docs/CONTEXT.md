@@ -440,7 +440,7 @@ Use PostgreSQL instead of SQLite even though SQLite would simplify the single-us
 
 ## Protomaps surface-map trial
 
-This separate, zoomable Sydney map publishes Protomaps Light/Dark styles with surface roads and walking paths. It does not replace the workspace map, iOS offline packs or PDF renderer.
+These separate, zoomable Sydney and Melbourne maps publish Protomaps Light/Dark styles with surface roads and walking paths. It does not replace the workspace map, iOS offline packs or PDF renderer.
 
 ### Run
 
@@ -451,13 +451,28 @@ bash scripts/download-protomaps-trial.sh
 bash scripts/start-protomaps-trial.sh
 ```
 
+Select Melbourne CBD/inner suburbs instead with:
+
+```sh
+ONON_PROTOMAPS_REGION=melbourne bash scripts/download-protomaps-trial.sh
+ONON_PROTOMAPS_REGION=melbourne bash scripts/start-protomaps-trial.sh
+```
+
+`ONON_PROTOMAPS_REGION` accepts `sydney` (default) or `melbourne`. Downloading one
+region retains the other archive; styles, fonts and sprites are shared. Set the
+same region when downloading and starting. `/region.json` identifies the active
+city so the viewer selects its matching bounds, camera, title and scenes. Melbourne
+scenes show CBD streets, the Yarra River and Royal Botanic Gardens. Only the active
+city's tile routes are public. Native iPhone preparation explicitly remains Sydney.
+
 Open <http://127.0.0.1:8083/protomaps.html>. Stop with Ctrl-C. The starter uses
 Node.js 24, pnpm/Vite and the retained PMTiles CLI; it never downloads at startup.
 The public HTTP adapter defaults to loopback port 8083; PMTiles stays private on
 loopback port 8082. Styles, TileJSON, vector tiles, glyphs, sprites and the viewer
 share the public origin. `/light.json` and `/dark.json` already contain surface
 filters and absolute resource URLs, so native HTTP clients need no browser patch.
-Both use `/sydney.json` and `/sydney/{z}/{x}/{y}.mvt` for shared tile resources.
+Both use `/<region>.json` and `/<region>/{z}/{x}/{y}.mvt` for shared tile resources
+(`/melbourne.json` and `/melbourne/{z}/{x}/{y}.mvt` when Melbourne is selected).
 
 For a phone on a trusted LAN, explicitly supply both bind and advertised host:
 
@@ -479,8 +494,8 @@ Downloads remain in ignored `.local/onon/protomaps-trial/`. Set absolute
 Output is `<ONON_DATA_ROOT>/protomaps-trial/site`. Filesystem aliases overlapping
 retained archives, tools, assets or provenance are rejected before Vite can clear
 its output. Output must resolve to its configured destination; aliases to the
-filesystem root or unrelated directories are rejected too. Only allowlisted published resources and Sydney vector tiles are
-served; raw archives and source/private folders are unavailable.
+filesystem root or unrelated directories are rejected too. Only allowlisted
+published resources and the selected region’s vector tiles are served; raw archives and source/private folders are unavailable.
 
 After explicit preparation and dependency installation, startup/rendering needs
 no external map service. This is **host-local rendering**, not a browser/device
@@ -489,8 +504,9 @@ laptop. Native selected-area downloads and recorder integration remain planned.
 
 ### Data and appearance
 
+- Melbourne archive: 27,394,555 bytes, source zooms 0–15, with display overzoom through 19. Bounds: west 144.85, south -37.95, east 145.10, north -37.70. This covers the CBD and inner suburbs, not all metropolitan Melbourne or Victoria. Source build `20261030.pmtiles`, schema 4.15.2, OSM replication timestamp `2026-10-30T04:00:00Z`. Region bounds, scene cameras, dated source and SHA-256 pins live in `apps/web/src/protomaps-regions.ts`; downloads validate the complete extract before publication. Melbourne metadata is retained separately as `provenance/melbourne-{header,metadata}.json`.
 - Sydney archive: 8,707,011 bytes, 208 vector tiles, zooms 0–15; higher viewer zooms overzoom those tiles. Bounds: west 151.15, south -33.92, east 151.25, north -33.80. Tiles intersecting the bounds can contain features beyond the requested rectangle.
-- Source: Protomaps daily build `20261009.pmtiles`, schema 4.15.2, OSM replication timestamp `2026-10-09T04:00:00Z`. This is another prepared OSM dataset, not an independent road survey.
+- Sydney source: Protomaps daily build `20261009.pmtiles`, schema 4.15.2, OSM replication timestamp `2026-10-09T04:00:00Z`. This is another prepared OSM dataset, not an independent road survey.
 - Style library: `@protomaps/basemaps` 5.7.2; asset commit `028c18f713baecad011301ff7a69acc39bcc2ae7`; PMTiles CLI 1.31.2. Downloads use pinned hashes and atomic writes; cached runs verify and reuse files. Dated upstream builds have limited retention: preserve the downloaded archive. A future refresh needs a new dated source and verified regional hash.
 - Ordinary road geometry renders as one ribbon. Actual separate carriageways retain separate source geometry, including Western Distributor. Cycleways/sidewalks do not become extra road ribbons. Road strokes and labels exclude tunnels, ferries and railways; walking paths have thin dashed strokes. Bridges remain visible.
 - No road geometry is merged or written back into OSM. If a future area has duplicated actual road centerlines, that needs a geometry/data review rather than suppressing all split roads.

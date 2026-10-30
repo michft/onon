@@ -20,6 +20,20 @@ then open `apps/ios/Onon.xcodeproj`, select a personal development team and inst
 
 Project context, plans, validation, and operating guidance live in [docs/](docs/).
 
+## Melbourne rendered map
+
+After installing the workspace dependencies:
+
+```sh
+ONON_PROTOMAPS_REGION=melbourne bash scripts/download-protomaps-trial.sh
+ONON_PROTOMAPS_REGION=melbourne bash scripts/start-protomaps-trial.sh
+```
+
+Open <http://127.0.0.1:8083/protomaps.html>. Melbourne CBD/inner-suburb coverage
+uses the same surface-road styles and local labels as Sydney. See
+[map coverage and LAN setup](docs/CONTEXT.md#protomaps-surface-map-trial).
+The native iPhone bundle remains Sydney; this adds locally rendered Melbourne tiles.
+
 ## Parts
 
 - `infra/` and `scripts/`: Apple-container local map/database platform.

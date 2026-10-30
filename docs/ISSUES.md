@@ -15,6 +15,9 @@ PR #4 repeated this pattern on 23 October 2026: it merged into
 `recorder-map-checks` after #3 had merged into `main`. The docs follow-up
 therefore carries the approved documentation into actual `main` history.
 
+PR #6 likewise merged into the already-merged `plan-offline-followup` branch.
+The Melbourne follow-up includes its reviewed HTTP renderer when targeting main.
+
 ## Case-only Markdown renames on macOS
 
 When integrating the uppercase ADR filename with JJ on this Mac, `jj new`

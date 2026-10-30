@@ -111,6 +111,34 @@ remaining browser, native, device, or physical acceptance gaps. Record a
 before/after result for a fix. Do not claim a build, install, launch, passing
 test, or merge-ready PR without the corresponding evidence.
 
+## Melbourne map validation — 2026-10-31 (Australia/Melbourne)
+
+Source revision `dbd356d4937e794540d8ae4e3469ba2f390d432c` adds Melbourne
+region selection above the reviewed HTTP renderer. These are fresh focused checks;
+older recorder and HTTP-source results below remain historical.
+
+- Extracted Melbourne CBD/inner-suburb tiles from Protomaps `20261030.pmtiles`:
+  27,394,555 bytes, bounds `144.85,-37.95,145.10,-37.70`, zooms 0–15,
+  schema 4.15.2, OSM timestamp `2026-10-30T04:00:00Z`. Full regional SHA-256
+  matches the pin in `apps/web/src/protomaps-regions.ts`; PMTiles verification
+  passed. Cached setup passed; Sydney archive hash stayed unchanged.
+- Seven HTTP adapter tests and one surface-style regression passed. Melbourne
+  route/selection regression failed before implementation, then passed.
+  Web and strict standalone-script typechecks, shell syntax, trial Vite build
+  and web production build passed (existing large-chunk advisory).
+- Real Melbourne CBD tile `15/29578/20106` through the isolated HTTP adapter
+  matched direct archive extraction: 223,938 decoded bytes. Both Light/Dark
+  styles identify Melbourne; real archive bounds match the selected region.
+- Real browser rendered Melbourne CBD, Yarra River and Botanic Gardens scenes:
+  24 requests, all on the same loopback origin with status 200; zero console
+  errors/warnings. Captures: [CBD](images/MELBOURNE-CBD.png) and
+  [Yarra](images/MELBOURNE-YARRA.png). Owned browser/test servers were stopped.
+- Cached native-map preparation with `ONON_PROTOMAPS_REGION=melbourne` still
+  generated the original Sydney bundle; its archive checksum matched Sydney.
+- Independent read-only source review passed with no actionable findings.
+  Native iPhone bundle remains Sydney; no device install, shared-server restart
+  or Melbourne native offline-download acceptance is claimed.
+
 ## Recorder publication validation — 2026-10-23 (Australia/Sydney)
 
 Inherited evidence from recorder publication, not tests/builds rerun by the
@@ -288,7 +316,7 @@ ONON_PROTOMAPS_TEST_CACHE=/absolute/path/to/protomaps-trial \
 node --test scripts/protomaps-http.test.mts
 ```
 
-The six adapter tests cover explicit LAN configuration, canonical cache/output
+The adapter tests cover explicit LAN configuration, canonical cache/output
 separation, root/unrelated output rejection, retained-file preservation, filtered Light/Dark
 styles, shared HTTP resource URLs, route isolation and compressed upstream tiles.
 Fixtures use temporary copies and ephemeral loopback servers, never a live cache
