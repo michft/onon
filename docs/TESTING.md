@@ -254,6 +254,46 @@ one PR per finding by default.
 
 ## Protomaps trial checks
 
+### HTTP source validation — 2026-10-23 (Australia/Sydney)
+
+Code revision `cbb9c71a1c93993b1f0b1e4c862134eb3cffb733` adds HTTP serving and
+canonical output/cache separation above implementation `f9e3d191`.
+Follow-up source `21aa697339604cac65ec7437cac1461dced451b0` rejects root and
+unrelated-directory output aliases. Configuration-only regressions failed before
+this fix; six adapter tests, strict script types and shell syntax passed afterward.
+The HTTP/rendering paths are unchanged from the runtime/browser evidence below.
+
+- Six HTTP adapter tests passed using temporary copies of real retained assets;
+  the output-symlink regression failed before its fix, then passed.
+- Web typecheck and strict standalone script typecheck passed. Trial Vite build
+  passed with the existing large-chunk advisory. The implementation's existing
+  surface-style test and web production build also passed before the path fix;
+  those web source files were unchanged by the path fix.
+- Isolated real PMTiles upstream check passed: proxied zoom-0 tile was
+  byte-identical to direct archive extraction (93,230 decoded bytes). Both styles,
+  TileJSON, viewer and 28 local resources loaded; raw archive endpoint rejected.
+- Browser render and CBD/harbour/park scene switches passed: 30 recorded requests
+  returned 200, all from the same loopback origin, with zero console errors or
+  warnings. [HTTP map capture](images/PROTOMAPS-HTTP.png) shows the actual viewer.
+  T3 snapshots timed out twice; isolated Playwright fallback supplied this proof.
+- Shared containers, LAN deployment, native downloader/device and field acceptance
+  were not exercised. Fixed archive bounds remain unchanged.
+
+HTTP source checks (Node.js 24, after installing workspace dependencies):
+
+```sh
+node --test scripts/protomaps-http.test.mts
+# Optional: test publication with copied real retained resources instead of fixture assets.
+ONON_PROTOMAPS_TEST_CACHE=/absolute/path/to/protomaps-trial \
+node --test scripts/protomaps-http.test.mts
+```
+
+The six adapter tests cover explicit LAN configuration, canonical cache/output
+separation, root/unrelated output rejection, retained-file preservation, filtered Light/Dark
+styles, shared HTTP resource URLs, route isolation and compressed upstream tiles.
+Fixtures use temporary copies and ephemeral loopback servers, never a live cache
+or shared service. Production startup itself does not fetch missing assets.
+
 Run `pnpm --filter @onon/web typecheck`, `pnpm --filter @onon/web test -- src/protomaps-style.test.ts` and `bash -n scripts/{download,start}-protomaps-trial.sh`. The starter performs the trial production build. The regression test evaluates MapLibre filters for streets, both carriageways, paths, tunnels, ferries and labels.
 
 The viewer's Content Security Policy restricts map connections and images to local resources. Verify a fresh browser load, then pan, zoom and switch CBD/harbour/park scenes with no failed requests. This proves independence from external services while the local servers run. It does not prove airplane-mode operation on iPhone or browser caching after the servers stop.

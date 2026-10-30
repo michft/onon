@@ -8,6 +8,15 @@ data_root="${ONON_DATA_ROOT:-$REPO_ROOT/.local/onon}"
 [[ "$data_root" = /* && "$data_root" != / ]] || die "ONON_DATA_ROOT must be an absolute non-root path"
 trial_dir="$data_root/protomaps-trial"
 assets="$trial_dir/assets"
+region_config="$(node --input-type=module - "$REPO_ROOT/apps/web/src/protomaps-regions.ts" "${ONON_PROTOMAPS_REGION:-sydney}" <<'JS'
+import { pathToFileURL } from 'node:url';
+const { mapRegion } = await import(pathToFileURL(process.argv[2]).href);
+const region = mapRegion(process.argv[3]);
+console.log([region.id, region.sha256, region.bounds.join(','), region.sourceBuild].join('\t'));
+JS
+)"
+IFS=$'\t' read -r region archive_hash archive_bounds source_build <<< "$region_config"
+
 mkdir -p "$trial_dir/tools" "$trial_dir/provenance" "$assets/vendor"
 valid() { [[ -f "$1" ]] && [[ "$(shasum -a 256 "$1" | awk '{print $1}')" = "$2" ]]; }
 download() {
@@ -72,18 +81,19 @@ bfac76cf7ed5c2aa2992695904056a1c6b07785b7fd20e6c640cb44fd6244a2e sprites/v4/dark
 1fb5b123fbe35d2e1f6ac171513ce01df89e671273a417ee89c44886a4c132f0 sprites/v4/dark@2x.json
 6e01b4e366d304f27bbd55390511a3d4e39aa1d03eb3e82f873f7ea32e74cbe4 sprites/v4/dark@2x.png
 ASSETS
-archive="$trial_dir/sydney.pmtiles"
-archive_hash=4035d24abf7aa0fcf2edc0a299d46a7fa17caf5dd099d2b5c585199a12509060
+archive="$trial_dir/$region.pmtiles"
 if ! valid "$archive" "$archive_hash"; then
-  log "extracting pinned Sydney region (about 8.7 MB); dated upstream builds have limited retention"
-  "$tool" extract https://build.protomaps.com/20261009.pmtiles "$archive.part" \
-    --bbox=151.15,-33.92,151.25,-33.80 --minzoom=0 --maxzoom=15
-  valid "$archive.part" "$archive_hash" || die "Sydney archive checksum mismatch"
+  log "extracting pinned $region region; dated upstream builds have limited retention"
+  "$tool" extract "https://build.protomaps.com/$source_build.pmtiles" "$archive.part" \
+    --bbox="$archive_bounds" --minzoom=0 --maxzoom=15
+  valid "$archive.part" "$archive_hash" || die "$region archive checksum mismatch"
   mv "$archive.part" "$archive"
 fi
 "$tool" verify "$archive"
-"$tool" show "$archive" --header-json > "$trial_dir/provenance/extract-header.json"
-"$tool" show "$archive" --metadata > "$trial_dir/provenance/extract-metadata.json"
+provenance_prefix="$region"
+[[ "$region" != sydney ]] || provenance_prefix=extract
+"$tool" show "$archive" --header-json > "$trial_dir/provenance/$provenance_prefix-header.json"
+"$tool" show "$archive" --metadata > "$trial_dir/provenance/$provenance_prefix-metadata.json"
 node - "$assets" <<'JS'
 const fs = require('node:fs');
 const vm = require('node:vm');
