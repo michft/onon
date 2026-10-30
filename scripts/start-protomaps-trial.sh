@@ -2,7 +2,8 @@
 set -Eeuo pipefail
 # shellcheck source=scripts/_common.sh
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_common.sh"
-for command in pnpm node curl; do require_command "$command"; done
+for command in pnpm curl; do require_command "$command"; done
+require_node24
 data_root="${ONON_DATA_ROOT:-$REPO_ROOT/.local/onon}"
 trial_dir="${ONON_PROTOMAPS_TRIAL_DIR:-$data_root/protomaps-trial}"
 # Validate all advertised URLs, binds and output paths before building or starting anything.

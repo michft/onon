@@ -2,7 +2,8 @@
 set -Eeuo pipefail
 # shellcheck source=scripts/_common.sh
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_common.sh"
-for command in curl node tar unzip shasum; do require_command "$command"; done
+for command in curl tar unzip shasum; do require_command "$command"; done
+require_node24
 [[ "$(uname -s)/$(uname -m)" = Darwin/arm64 ]] || die "trial downloader requires Apple Silicon macOS"
 data_root="${ONON_DATA_ROOT:-$REPO_ROOT/.local/onon}"
 [[ "$data_root" = /* && "$data_root" != / ]] || die "ONON_DATA_ROOT must be an absolute non-root path"

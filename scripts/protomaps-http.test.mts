@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createServer, request, type Server } from "node:http";
 import { once } from "node:events";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { createRequire } from "node:module";
 import { gzipSync } from "node:zlib";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { prepareTrialSite, trialConfig, trialServer } from "./protomaps-http.mts";
 import type { surfaceMapStyle } from "../apps/web/src/protomaps-style.ts";
 type StyleSpecification = Parameters<typeof surfaceMapStyle>[0];
@@ -317,4 +319,35 @@ test("Melbourne styles and TileJSON select Melbourne tiles and reject Sydney rou
     if (upstream.listening) await close(upstream);
     rmSync(directory, { recursive: true, force: true });
   }
+});
+
+
+test("map entrypoints explain Node 24 requirement before importing TypeScript or writing assets", () => {
+  const directory = mkdtempSync(resolve(tmpdir(), "onon-node-preflight-"));
+  try {
+    const bin = resolve(directory, "bin");
+    mkdirSync(bin);
+    const unexpected = "echo 'unexpected map command reached' >&2; exit 99";
+    writeFileSync(resolve(bin, "node"), `#!/bin/sh
+if [ "$1" = "-e" ]; then exit 1; fi
+${unexpected}
+`, { mode: 0o755 });
+    for (const command of ["curl", "tar", "unzip", "shasum", "pnpm"]) {
+      writeFileSync(resolve(bin, command), `#!/bin/sh
+${unexpected}
+`, { mode: 0o755 });
+    }
+    writeFileSync(resolve(bin, "uname"), '#!/bin/sh\ncase "$1" in -s) echo Darwin;; -m) echo arm64;; esac\n', { mode: 0o755 });
+    const output = resolve(directory, "output");
+    for (const entry of ["download-protomaps-trial.sh", "start-protomaps-trial.sh"]) {
+      const result = spawnSync("bash", [fileURLToPath(new URL(entry, import.meta.url))], {
+        env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ""}`, ONON_DATA_ROOT: output, ONON_PROTOMAPS_REGION: "melbourne" },
+        encoding: "utf8",
+      });
+      assert.equal(result.status, 1, entry);
+      assert.match(result.stderr, /Node\.js 24 or later is required/, entry);
+      assert.doesNotMatch(result.stderr, /unexpected map command reached/, entry);
+    }
+    assert.equal(existsSync(output), false, "Unsupported Node must not create map output");
+  } finally { rmSync(directory, { recursive: true, force: true }); }
 });

@@ -466,7 +466,7 @@ scenes show CBD streets, the Yarra River and Royal Botanic Gardens. Only the act
 city's tile routes are public. Native iPhone preparation explicitly remains Sydney.
 
 Open <http://127.0.0.1:8083/protomaps.html>. Stop with Ctrl-C. The starter uses
-Node.js 24, pnpm/Vite and the retained PMTiles CLI; it never downloads at startup.
+Node.js 24 or later, pnpm/Vite and the retained PMTiles CLI; it never downloads at startup.
 The public HTTP adapter defaults to loopback port 8083; PMTiles stays private on
 loopback port 8082. Styles, TileJSON, vector tiles, glyphs, sprites and the viewer
 share the public origin. `/light.json` and `/dark.json` already contain surface
