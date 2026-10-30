@@ -135,6 +135,12 @@ older recorder and HTTP-source results below remain historical.
   [Yarra](images/MELBOURNE-YARRA.png). Owned browser/test servers were stopped.
 - Cached native-map preparation with `ONON_PROTOMAPS_REGION=melbourne` still
   generated the original Sydney bundle; its archive checksum matched Sydney.
+- Review follow-up `451b917bd82ee08635248075d646d1e76a67f7ee` adds shared
+  Node.js 24+ preflight to download/start entrypoints. Simulated unsupported-Node
+  rejection failed before the fix, then passed before imports or output creation.
+  Eight adapter/CLI tests, strict script types, shell syntax and real cached
+  Melbourne preparation passed. App/rendering source is unchanged by this fix;
+  earlier browser/build evidence above was not rerun for the preflight change.
 - Independent read-only source review passed with no actionable findings.
   Native iPhone bundle remains Sydney; no device install, shared-server restart
   or Melbourne native offline-download acceptance is claimed.
