@@ -1,25 +1,33 @@
-import maplibregl, { type CameraOptions } from "maplibre-gl";
+import maplibregl from "maplibre-gl";
 import type { StyleSpecification } from "@maplibre/maplibre-gl-style-spec";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./protomaps-trial.css";
-import { surfaceMapStyle } from "./protomaps-style";
+import { mapRegion } from "./protomaps-regions";
 
-const scenes: Record<string, CameraOptions> = {
-  streets: { center: [151.2024, -33.8685], zoom: 17, bearing: 45 },
-  harbour: { center: [151.210, -33.856], zoom: 14.5, bearing: 0 },
-  park: { center: [151.216, -33.863], zoom: 16, bearing: 0 }
-};
 const status = document.querySelector<HTMLElement>("#status")!;
 
 async function start() {
+  const selectionResponse = await fetch("/region.json");
+  if (!selectionResponse.ok) throw new Error(`Map region unavailable (${selectionResponse.status})`);
+  const selection: unknown = await selectionResponse.json();
+  if (!selection || typeof selection !== "object" || !("id" in selection) || typeof selection.id !== "string") {
+    throw new Error("Invalid map region");
+  }
+  const region = mapRegion(selection.id);
+  const scenes = region.scenes;
+  document.querySelector("h1")!.textContent = `${region.name} run map`;
+  document.title = `Onon · ${region.name} run map`;
+  document.querySelector("#map")!.setAttribute("aria-label", `Interactive ${region.name} surface road map`);
+  for (const button of document.querySelectorAll<HTMLButtonElement>("[data-scene]")) {
+    const key = button.dataset.scene as keyof typeof scenes;
+    if (scenes[key]) button.textContent = scenes[key].label;
+  }
   const response = await fetch("/light.json");
   if (!response.ok) throw new Error(`Local style unavailable (${response.status})`);
-  const baseline: StyleSpecification = await response.json();
-  // MapLibre requires an absolute sprite URL even for a locally fetched style.
-  if (typeof baseline.sprite === "string") baseline.sprite = new URL(baseline.sprite, location.href).href;
+  const style: StyleSpecification = await response.json();
   const map = new maplibregl.Map({
-    container: "map", style: surfaceMapStyle(baseline), ...scenes.streets,
-    maxBounds: [[151.15, -33.92], [151.25, -33.80]], minZoom: 12, maxZoom: 19
+    container: "map", style, ...scenes.streets,
+    maxBounds: [[region.bounds[0], region.bounds[1]], [region.bounds[2], region.bounds[3]]], minZoom: 12, maxZoom: 19
   });
   map.addControl(new maplibregl.NavigationControl(), "top-right");
   let failed = false;
@@ -33,7 +41,7 @@ async function start() {
   });
   for (const button of document.querySelectorAll<HTMLButtonElement>("[data-scene]")) {
     button.addEventListener("click", () => {
-      const scene = scenes[button.dataset.scene ?? ""];
+      const scene = scenes[button.dataset.scene as keyof typeof scenes];
       if (!scene) return;
       for (const candidate of document.querySelectorAll("[data-scene]")) {
         candidate.setAttribute("aria-pressed", String(candidate === button));

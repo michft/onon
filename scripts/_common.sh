@@ -14,6 +14,12 @@ die() { printf '[onon] error: %s\n' "$*" >&2; exit 1; }
 
 require_command() { command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"; }
 
+require_node24() {
+  require_command node
+  node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 24 ? 0 : 1)' ||
+    die "Node.js 24 or later is required for Protomaps TypeScript scripts"
+}
+
 load_config() {
   [[ -f "$IMAGES_ENV" ]] || die "missing $IMAGES_ENV"
   [[ -f "$LOCAL_ENV" ]] || die "missing $LOCAL_ENV; run scripts/bootstrap-local.sh first"

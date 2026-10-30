@@ -111,6 +111,40 @@ remaining browser, native, device, or physical acceptance gaps. Record a
 before/after result for a fix. Do not claim a build, install, launch, passing
 test, or merge-ready PR without the corresponding evidence.
 
+## Melbourne map validation — 2026-10-31 (Australia/Melbourne)
+
+Source revision `dbd356d4937e794540d8ae4e3469ba2f390d432c` adds Melbourne
+region selection above the reviewed HTTP renderer. These are fresh focused checks;
+older recorder and HTTP-source results below remain historical.
+
+- Extracted Melbourne CBD/inner-suburb tiles from Protomaps `20261030.pmtiles`:
+  27,394,555 bytes, bounds `144.85,-37.95,145.10,-37.70`, zooms 0–15,
+  schema 4.15.2, OSM timestamp `2026-10-30T04:00:00Z`. Full regional SHA-256
+  matches the pin in `apps/web/src/protomaps-regions.ts`; PMTiles verification
+  passed. Cached setup passed; Sydney archive hash stayed unchanged.
+- Seven HTTP adapter tests and one surface-style regression passed. Melbourne
+  route/selection regression failed before implementation, then passed.
+  Web and strict standalone-script typechecks, shell syntax, trial Vite build
+  and web production build passed (existing large-chunk advisory).
+- Real Melbourne CBD tile `15/29578/20106` through the isolated HTTP adapter
+  matched direct archive extraction: 223,938 decoded bytes. Both Light/Dark
+  styles identify Melbourne; real archive bounds match the selected region.
+- Real browser rendered Melbourne CBD, Yarra River and Botanic Gardens scenes:
+  24 requests, all on the same loopback origin with status 200; zero console
+  errors/warnings. Captures: [CBD](images/MELBOURNE-CBD.png) and
+  [Yarra](images/MELBOURNE-YARRA.png). Owned browser/test servers were stopped.
+- Cached native-map preparation with `ONON_PROTOMAPS_REGION=melbourne` still
+  generated the original Sydney bundle; its archive checksum matched Sydney.
+- Review follow-up `451b917bd82ee08635248075d646d1e76a67f7ee` adds shared
+  Node.js 24+ preflight to download/start entrypoints. Simulated unsupported-Node
+  rejection failed before the fix, then passed before imports or output creation.
+  Eight adapter/CLI tests, strict script types, shell syntax and real cached
+  Melbourne preparation passed. App/rendering source is unchanged by this fix;
+  earlier browser/build evidence above was not rerun for the preflight change.
+- Independent read-only source review passed with no actionable findings.
+  Native iPhone bundle remains Sydney; no device install, shared-server restart
+  or Melbourne native offline-download acceptance is claimed.
+
 ## Recorder publication validation — 2026-10-23 (Australia/Sydney)
 
 Inherited evidence from recorder publication, not tests/builds rerun by the
@@ -253,6 +287,46 @@ PRs around requested merge groups; stack dependent groups rather than opening
 one PR per finding by default.
 
 ## Protomaps trial checks
+
+### HTTP source validation — 2026-10-23 (Australia/Sydney)
+
+Code revision `cbb9c71a1c93993b1f0b1e4c862134eb3cffb733` adds HTTP serving and
+canonical output/cache separation above implementation `f9e3d191`.
+Follow-up source `21aa697339604cac65ec7437cac1461dced451b0` rejects root and
+unrelated-directory output aliases. Configuration-only regressions failed before
+this fix; six adapter tests, strict script types and shell syntax passed afterward.
+The HTTP/rendering paths are unchanged from the runtime/browser evidence below.
+
+- Six HTTP adapter tests passed using temporary copies of real retained assets;
+  the output-symlink regression failed before its fix, then passed.
+- Web typecheck and strict standalone script typecheck passed. Trial Vite build
+  passed with the existing large-chunk advisory. The implementation's existing
+  surface-style test and web production build also passed before the path fix;
+  those web source files were unchanged by the path fix.
+- Isolated real PMTiles upstream check passed: proxied zoom-0 tile was
+  byte-identical to direct archive extraction (93,230 decoded bytes). Both styles,
+  TileJSON, viewer and 28 local resources loaded; raw archive endpoint rejected.
+- Browser render and CBD/harbour/park scene switches passed: 30 recorded requests
+  returned 200, all from the same loopback origin, with zero console errors or
+  warnings. [HTTP map capture](images/PROTOMAPS-HTTP.png) shows the actual viewer.
+  T3 snapshots timed out twice; isolated Playwright fallback supplied this proof.
+- Shared containers, LAN deployment, native downloader/device and field acceptance
+  were not exercised. Fixed archive bounds remain unchanged.
+
+HTTP source checks (Node.js 24, after installing workspace dependencies):
+
+```sh
+node --test scripts/protomaps-http.test.mts
+# Optional: test publication with copied real retained resources instead of fixture assets.
+ONON_PROTOMAPS_TEST_CACHE=/absolute/path/to/protomaps-trial \
+node --test scripts/protomaps-http.test.mts
+```
+
+The adapter tests cover explicit LAN configuration, canonical cache/output
+separation, root/unrelated output rejection, retained-file preservation, filtered Light/Dark
+styles, shared HTTP resource URLs, route isolation and compressed upstream tiles.
+Fixtures use temporary copies and ephemeral loopback servers, never a live cache
+or shared service. Production startup itself does not fetch missing assets.
 
 Run `pnpm --filter @onon/web typecheck`, `pnpm --filter @onon/web test -- src/protomaps-style.test.ts` and `bash -n scripts/{download,start}-protomaps-trial.sh`. The starter performs the trial production build. The regression test evaluates MapLibre filters for streets, both carriageways, paths, tunnels, ferries and labels.
 

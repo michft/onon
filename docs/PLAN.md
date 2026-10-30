@@ -1,20 +1,16 @@
 # Onon plan
 
-## Status — 2026-10-23 (Australia/Sydney)
+## Status — 2026-10-31 (Australia/Melbourne)
 
-The native recorder/map and recovery changes from PR #3 are on `main` at
-`f7245c0f`. PR #4 merged into the already-merged recorder branch, so its approved
-docs require this follow-up before they are integrated into `main`. The local
-consolidated docs are preserved alongside the reviewed source and validation.
+PR #5's consolidated guidance is on `main` at `ad0ad2d5`. PR #6 merged into
+its already-merged predecessor rather than main, so this Melbourne follow-up
+also integrates that reviewed HTTP renderer. It adds a 27.4 MB Melbourne
+CBD/inner-suburb extract and matching Light/Dark HTTP styles, labels and scenes,
+while retaining Sydney coverage and the Sydney-only native bundle.
 
-Delivered in source: bundled Sydney Protomaps surface map with labels and light/dark
-appearance; separate GPS/Waypoint overlay; durable recorder and retryable recovery;
-explicit local-server pairing approval and automatic/manual sync. Inherited recorder-publication evidence records
-31 iOS tests and an iPhone-architecture Release build at source revision
-`91f54969734317da2bfa2be502f7c7cb77c6e475`. API 6/web 6 tests, typechecks and
-production builds were earlier checks on unchanged TypeScript source in that
-publication stack. This documentation-only follow-up did not rerun them.
-Their provenance and physical limits belong in [TESTING.md](TESTING.md#recorder-publication-validation--2026-10-23-australiasydney).
+Focused Melbourne checks and historical recorder evidence are distinguished in
+[TESTING.md](TESTING.md). Native selected-area downloads, broader coverage,
+workspace/PDF integration and physical acceptance remain open below.
 
 ## Remaining work
 
@@ -28,15 +24,21 @@ Their provenance and physical limits belong in [TESTING.md](TESTING.md#recorder-
 
 ### Next feature slice: connect selected areas to the recorder
 
-Assess Protomaps/MapLibre resource behavior first. The fixed bundled 11 MB Sydney
-map is already offline; selecting bounds inside it alone is not a download feature.
-Do not expose the dormant server-pack controls as completed Protomaps caching.
+HTTP source prerequisite is implemented: the trial now publishes filtered
+Light/Dark styles and HTTP TileJSON/ZXY resources through one origin, with
+loopback default and explicit trusted-LAN opt-in. Adapter tests and an isolated
+real-PMTiles loopback check pass. Sydney bounds are unchanged; the additional
+bounded Melbourne extract is available at source zooms 0–15. Neither is whole-city/service-area coverage.
 
-Choose the smallest end-to-end area flow after verifying its tile source and
-renderer connection. Keep route-corridor selection, broader service-area overview,
-and cache lifecycle as explicit follow-up steps until their acceptance evidence
-exists. No phone deployment, shared-container rebuild or field gate is implied by
-this documentation update.
+Next, connect native selected-area downloads to those exact HTTP styles and the
+recorder. Verify resource retention, cold launch, pan/zoom and appearance changes
+with the laptop unreachable. The fixed bundled 11 MB map is already offline;
+selecting bounds inside it alone is not a download feature. Do not expose dormant
+server-pack controls as completed Protomaps caching.
+
+Route-corridor selection, broader service-area overview, updates/deletion and
+quota/eviction remain incomplete. Native download/airplane-mode and physical field
+gates are open; HTTP source tests do not close them.
 
 ## Approved MVP delivery scope
 
