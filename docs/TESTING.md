@@ -131,6 +131,15 @@ Clayton, north of South Morang–below Clayton) and bundles both in the app.
 - Signed Release build, strict signature check and install on deadbeef7
   (iPhone 17 Pro, iOS 27.0.1) passed; the device query confirmed the install.
   Physical launch, airplane mode and outdoor use remain unverified.
+- Field walk, 2026-11-01, deadbeef7, inside the Melbourne bundle: one
+  recording of about an hour, 736 samples, average accuracy 6.7 m, about
+  2.0 km at walking pace, three waypoints, finished locally. The user paused it
+  for about 24 minutes indoors; samples resumed within 10 m. The phone was
+  in a pocket with 5-minute auto-lock. From five minutes after the last
+  interaction to each segment's end, sampling continued for 6.8 min (178
+  samples, largest gap 23 s) and 23.1 min (270 samples, largest gap 45 s).
+  This supports locked-screen recording and pause/resume. Not covered: airplane
+  mode, force-close recovery and sync to the laptop.
 
 ## Melbourne map validation — 2026-10-31 (Australia/Melbourne)
 
