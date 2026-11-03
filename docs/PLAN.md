@@ -4,9 +4,9 @@
 
 PR #5's consolidated guidance is on `main` at `ad0ad2d5`. PR #6 merged into
 its already-merged predecessor rather than main, so this Melbourne follow-up
-also integrates that reviewed HTTP renderer. It adds a 27.4 MB Melbourne
-CBD/inner-suburb extract and matching Light/Dark HTTP styles, labels and scenes,
-while retaining Sydney coverage and the Sydney-only native bundle.
+also integrates that reviewed HTTP renderer. It adds a Melbourne
+extract and matching Light/Dark HTTP styles, labels and scenes. The iPhone
+bundle now carries both cities in one 97 MB offline archive.
 
 Focused Melbourne checks and historical recorder evidence are distinguished in
 [TESTING.md](TESTING.md). Native selected-area downloads, broader coverage,
@@ -28,11 +28,11 @@ HTTP source prerequisite is implemented: the trial now publishes filtered
 Light/Dark styles and HTTP TileJSON/ZXY resources through one origin, with
 loopback default and explicit trusted-LAN opt-in. Adapter tests and an isolated
 real-PMTiles loopback check pass. Sydney bounds are unchanged; the additional
-bounded Melbourne extract is available at source zooms 0–15. Neither is whole-city/service-area coverage.
+bounded Melbourne extract is available at source zooms 0–15. Neither is whole-metropolitan coverage.
 
 Next, connect native selected-area downloads to those exact HTTP styles and the
 recorder. Verify resource retention, cold launch, pan/zoom and appearance changes
-with the laptop unreachable. The fixed bundled 11 MB map is already offline;
+with the laptop unreachable. The fixed bundled 98 MB Sydney and Melbourne map is already offline;
 selecting bounds inside it alone is not a download feature. Do not expose dormant
 server-pack controls as completed Protomaps caching.
 
@@ -45,7 +45,7 @@ gates are open; HTTP source tests do not close them.
 The original scope below was approved before implementation. It records intended
 behavior and delivery order, not proof that every acceptance gate has passed.
 Historical machine results live in the validation guide; completed changes live
-in the changelog. The bundled Sydney map is delivered, while selectable route
+in the changelog. The bundled Sydney and Melbourne map is delivered, while selectable route
 caching and workspace/PDF integration above remain open.
 
 ## Outcome
@@ -56,7 +56,7 @@ Build a local-first mapping system for inner Sydney with three parts:
 2. A native SwiftUI iPhone trail recorder that survives sleep and locking.
 3. A web workspace for editing trails, adding symbols, styling maps, and exporting A4 PDFs.
 
-The initial map covers east of Parramatta, south of Hornsby, north of Sutherland, and one nautical mile offshore.
+The Sydney map covers Penrith to the sea and Hornsby to Sutherland. Melbourne covers the Airport to Monash Clayton and north of South Morang to below Clayton.
 
 ## System Shape
 

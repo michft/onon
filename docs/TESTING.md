@@ -111,6 +111,36 @@ remaining browser, native, device, or physical acceptance gaps. Record a
 before/after result for a fix. Do not claim a build, install, launch, passing
 test, or merge-ready PR without the corresponding evidence.
 
+## Two-city iPhone bundle — 2026-10-31 (Australia/Melbourne)
+
+Expands Sydney (Penrith–sea, Hornsby–Sutherland) and Melbourne (Airport–Monash
+Clayton, north of South Morang–below Clayton) and bundles both in the app.
+
+- Extracted from Protomaps `20261030.pmtiles` (the `20261009` Sydney source is
+  no longer published): Sydney 52,256,970 bytes, Melbourne 44,876,980 bytes,
+  combined `onon-regions.pmtiles` 96,909,656 bytes (5,713 tiles, MultiPolygon
+  region). All three SHA-256 pins match; PMTiles verification passed. Cached
+  `scripts/prepare-ios-map.sh` and Melbourne download reran without extracting.
+- Web/API typecheck, lint and tests (12), shell syntax and eight HTTP adapter
+  tests passed after updating their pinned bounds.
+- 32 iOS simulator tests passed, including a new header check that the bundled
+  archive covers both city centres.
+- Simulator (iPhone 18 Pro, iOS 27.0) with simulated locations rendered
+  Melbourne CBD, Penrith and South Morang from the bundle, opening at the
+  last known location.
+- Signed Release build, strict signature check and install on deadbeef7
+  (iPhone 17 Pro, iOS 27.0.1) passed; the device query confirmed the install.
+  Physical launch, airplane mode and outdoor use remain unverified.
+- Field walk, 2026-11-01, deadbeef7, inside the Melbourne bundle: one
+  recording of about an hour, 736 samples, average accuracy 6.7 m, about
+  2.0 km at walking pace, three waypoints, finished locally. The user paused it
+  for about 24 minutes indoors; samples resumed within 10 m. The phone was
+  in a pocket with 5-minute auto-lock. From five minutes after the last
+  interaction to each segment's end, sampling continued for 6.8 min (178
+  samples, largest gap 23 s) and 23.1 min (270 samples, largest gap 45 s).
+  This supports locked-screen recording and pause/resume. Not covered: airplane
+  mode, force-close recovery and sync to the laptop.
+
 ## Melbourne map validation — 2026-10-31 (Australia/Melbourne)
 
 Source revision `dbd356d4937e794540d8ae4e3469ba2f390d432c` adds Melbourne

@@ -71,7 +71,7 @@ The fixed relationship between distance on a **Print Export** and distance on th
 _Avoid_: Fit-to-page zoom, Recommended Visual Scale
 
 **Sydney Service Area**:
-The initial map area east of Parramatta, south of Hornsby, north of Sutherland, and extending one nautical mile offshore.
+The Sydney map area from Penrith in the west to the sea in the east, and from Hornsby in the north to Sutherland in the south. The server Planetiler job still uses its older, smaller `ONON_SERVICE_BOUNDS`.
 _Avoid_: Greater Sydney, New South Wales
 
 ### Map and rendering terms
@@ -451,7 +451,7 @@ bash scripts/download-protomaps-trial.sh
 bash scripts/start-protomaps-trial.sh
 ```
 
-Select Melbourne CBD/inner suburbs instead with:
+Select Melbourne instead with:
 
 ```sh
 ONON_PROTOMAPS_REGION=melbourne bash scripts/download-protomaps-trial.sh
@@ -504,9 +504,9 @@ laptop. Native selected-area downloads and recorder integration remain planned.
 
 ### Data and appearance
 
-- Melbourne archive: 27,394,555 bytes, source zooms 0–15, with display overzoom through 19. Bounds: west 144.85, south -37.95, east 145.10, north -37.70. This covers the CBD and inner suburbs, not all metropolitan Melbourne or Victoria. Source build `20261030.pmtiles`, schema 4.15.2, OSM replication timestamp `2026-10-30T04:00:00Z`. Region bounds, scene cameras, dated source and SHA-256 pins live in `apps/web/src/protomaps-regions.ts`; downloads validate the complete extract before publication. Melbourne metadata is retained separately as `provenance/melbourne-{header,metadata}.json`.
-- Sydney archive: 8,707,011 bytes, 208 vector tiles, zooms 0–15; higher viewer zooms overzoom those tiles. Bounds: west 151.15, south -33.92, east 151.25, north -33.80. Tiles intersecting the bounds can contain features beyond the requested rectangle.
-- Sydney source: Protomaps daily build `20261009.pmtiles`, schema 4.15.2, OSM replication timestamp `2026-10-09T04:00:00Z`. This is another prepared OSM dataset, not an independent road survey.
+- Melbourne archive: 44,876,980 bytes, 1,984 vector tiles, source zooms 0–15, with display overzoom through 19. Bounds: west 144.80, south -37.96, east 145.16, north -37.58: Melbourne Airport to Monash Clayton (which lies east of La Trobe), north of South Morang to below Clayton. Not all metropolitan Melbourne or Victoria. Source build `20261030.pmtiles`, schema 4.15.2, OSM replication timestamp `2026-10-30T04:00:00Z`. Region bounds, scene cameras, dated source and SHA-256 pins live in `apps/web/src/protomaps-regions.ts`; downloads validate the complete extract before publication. Melbourne metadata is retained separately as `provenance/melbourne-{header,metadata}.json`.
+- Sydney archive: 52,256,970 bytes, 3,734 vector tiles, zooms 0–15; higher viewer zooms overzoom those tiles. Bounds: west 150.65, south -34.06, east 151.34, north -33.67: Penrith to the sea, Hornsby to Sutherland. Tiles intersecting the bounds can contain features beyond the requested rectangle.
+- Sydney and Melbourne source: Protomaps daily build `20261030.pmtiles`, schema 4.15.2, OSM replication timestamp `2026-10-30T04:00:00Z`. The earlier `20261009` build is no longer published upstream. This is another prepared OSM dataset, not an independent road survey.
 - Style library: `@protomaps/basemaps` 5.7.2; asset commit `028c18f713baecad011301ff7a69acc39bcc2ae7`; PMTiles CLI 1.31.2. Downloads use pinned hashes and atomic writes; cached runs verify and reuse files. Dated upstream builds have limited retention: preserve the downloaded archive. A future refresh needs a new dated source and verified regional hash.
 - Ordinary road geometry renders as one ribbon. Actual separate carriageways retain separate source geometry, including Western Distributor. Cycleways/sidewalks do not become extra road ribbons. Road strokes and labels exclude tunnels, ferries and railways; walking paths have thin dashed strokes. Bridges remain visible.
 - No road geometry is merged or written back into OSM. If a future area has duplicated actual road centerlines, that needs a geometry/data review rather than suppressing all split roads.

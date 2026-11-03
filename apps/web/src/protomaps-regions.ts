@@ -17,9 +17,10 @@ export interface MapRegion {
 export const mapRegions = {
   sydney: {
     id: "sydney", name: "Sydney",
-    bounds: [151.15, -33.92, 151.25, -33.80],
-    sourceBuild: "20261009",
-    sha256: "4035d24abf7aa0fcf2edc0a299d46a7fa17caf5dd099d2b5c585199a12509060",
+    // Penrith to the sea, Hornsby to Sutherland.
+    bounds: [150.65, -34.06, 151.34, -33.67],
+    sourceBuild: "20261030",
+    sha256: "d4e5fa05c3464ce3fbf78a0a9030032917f6b528029ff5289fdd22a7b1d6ef3b",
     scenes: {
       streets: { label: "CBD streets", center: [151.2024, -33.8685], zoom: 17, bearing: 45 },
       water: { label: "Harbour", center: [151.210, -33.856], zoom: 14.5, bearing: 0 },
@@ -28,9 +29,10 @@ export const mapRegions = {
   },
   melbourne: {
     id: "melbourne", name: "Melbourne",
-    bounds: [144.85, -37.95, 145.10, -37.70],
+    // West to the Airport, east past La Trobe to Monash Clayton, north of South Morang, south below Clayton.
+    bounds: [144.80, -37.96, 145.16, -37.58],
     sourceBuild: "20261030",
-    sha256: "934f26ff5228857e606d47ac863a0f420fd37e238de9a36f338075f90b98ae04",
+    sha256: "154dc4cab2108c04de404013e730f95bcb55440145f8fee94217cc56bfb110bf",
     scenes: {
       streets: { label: "CBD streets", center: [144.9631, -37.8136], zoom: 16.5, bearing: 0 },
       water: { label: "Yarra River", center: [144.9674, -37.8198], zoom: 16.5, bearing: 0 },
@@ -38,6 +40,24 @@ export const mapRegions = {
     },
   },
 } satisfies Record<string, MapRegion>;
+
+/** Every region in one archive, bundled into the iPhone app for offline use. */
+export const nativeBundle = {
+  file: "onon-regions.pmtiles",
+  sourceBuild: "20261030",
+  sha256: "7430e1ac2d42f01108f4dea0539e2bba35b1a7cfe59f8c27c0471c6ebdc7d01f",
+  regions: [mapRegions.sydney, mapRegions.melbourne],
+};
+
+/** GeoJSON MultiPolygon of the bundled regions, the `pmtiles extract --region` input. */
+export function nativeBundleArea() {
+  return {
+    type: "MultiPolygon",
+    coordinates: nativeBundle.regions.map(({ bounds: [west, south, east, north] }) => [
+      [[west, south], [east, south], [east, north], [west, north], [west, south]],
+    ]),
+  };
+}
 
 export function mapRegion(id: string): MapRegion {
   const region = Object.values(mapRegions).find((value) => value.id === id);

@@ -24,7 +24,7 @@ struct PairingView: View {
                 Section("Field use") {
                     Label("Raw recordings stay on this iPhone after sync", systemImage: "internaldrive")
                     Label("Always location access enables lock-screen capture", systemImage: "lock.iphone")
-                    Label("Bundled Sydney map works offline", systemImage: "map")
+                    Label("Bundled Sydney and Melbourne maps work offline", systemImage: "map")
                 }
             }
             .navigationTitle("Server")
